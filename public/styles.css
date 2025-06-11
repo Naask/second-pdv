@@ -1,0 +1,286 @@
+/* public/css/styles.css */
+
+/* --- Variáveis de Cor e Fontes --- */
+:root {
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+    --text-color: #212529;
+    --background-color: #e9ecef;
+    --border-color: #dee2e6;
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* --- Reset e Estilos Globais --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 0 15px;
+}
+
+.card {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* --- Header --- */
+.main-header {
+    background-color: var(--dark-color);
+    color: #fff;
+    padding: 1rem 0;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+/* --- Formulários e Botões --- */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+input[type="text"],
+input[type="tel"],
+input[type="email"],
+input[type="number"] {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.button-primary, .button-secondary {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.button-primary {
+    background-color: var(--primary-color);
+    color: #fff;
+}
+.button-primary:hover {
+    background-color: #0056b3;
+}
+
+.button-secondary {
+    background-color: var(--secondary-color);
+    color: #fff;
+}
+.button-secondary:hover {
+    background-color: #5a6268;
+}
+
+/* --- Seção de Busca --- */
+#customer-search-section .form-group {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+}
+.suggestions {
+    border: 1px solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    background-color: #fff;
+    max-height: 200px;
+    overflow-y: auto;
+}
+.suggestions div {
+    padding: 0.75rem;
+    cursor: pointer;
+}
+.suggestions div:hover {
+    background-color: var(--light-color);
+}
+
+/* --- Seção de Detalhes do Cliente --- */
+.customer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+
+.balance-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+.balance-card {
+    padding: 1.5rem;
+    border-radius: 8px;
+    color: #fff;
+    text-align: center;
+}
+.balance-card span {
+    display: block;
+    font-size: 1rem;
+}
+.balance-card strong {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+}
+.balance-card.total { background-color: var(--primary-color); }
+.balance-card.main { background-color: #17a2b8; }
+.balance-card.bonus { background-color: var(--success-color); }
+
+.actions {
+    margin-bottom: 2rem;
+}
+
+/* --- Tabela do Ledger --- */
+.ledger-container {
+    overflow-x: auto;
+}
+#ledger-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+#ledger-table th, #ledger-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+#ledger-table th {
+    background-color: var(--light-color);
+    font-weight: 600;
+}
+#ledger-table .amount {
+    text-align: right;
+    font-weight: 600;
+}
+
+/* Estilos para tipos de transação */
+.transaction-type-credit { color: var(--success-color); }
+.transaction-type-debit { color: var(--danger-color); }
+.transaction-type-bonus { color: #17a2b8; }
+.transaction-type-neutral { color: var(--secondary-color); }
+
+/* --- Modais --- */
+.modal {
+    position: fixed;
+    z-index: 100;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.modal-content {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    animation: fadeIn 0.3s;
+}
+.close-button {
+    color: #aaa;
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.close-button:hover {
+    color: var(--dark-color);
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* --- Feedback (Loading e Mensagens) --- */
+#loading-overlay {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background-color: rgba(255, 255, 255, 0.7);
+    z-index: 200;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.spinner {
+    border: 8px solid var(--light-color);
+    border-top: 8px solid var(--primary-color);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+#message-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 300;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.message {
+    padding: 1rem 1.5rem;
+    border-radius: 4px;
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    animation: slideIn 0.3s forwards;
+}
+.message.success { background-color: var(--success-color); }
+.message.error { background-color: var(--danger-color); }
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}

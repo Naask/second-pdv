@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDV Lavanderia - Ledger</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="js/main.js" type="module" defer></script>
+</head>
+<body>
+
+    <div id="loading-overlay" class="hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <div id="message-container"></div>
+
+    <header class="main-header">
+        <h1>PDV Lavanderia</h1>
+    </header>
+
+    <main class="container">
+        <section id="customer-search-section" class="card">
+            <h2>Buscar Cliente</h2>
+            <div class="form-group">
+                <label for="customer-search-input">Nome do Cliente:</label>
+                <input type="text" id="customer-search-input" placeholder="Digite para buscar...">
+                <button id="new-customer-btn" class="button-primary">Novo Cliente</button>
+            </div>
+            <div id="customer-suggestions" class="suggestions"></div>
+        </section>
+
+        <section id="customer-details-section" class="card hidden">
+            <div class="customer-header">
+                <h2 id="customer-name-display">Nome do Cliente</h2>
+                <button id="close-customer-view-btn" class="button-secondary">X Fechar</button>
+            </div>
+            
+            <div class="customer-info">
+                <p><strong>Telefone:</strong> <span id="customer-phone-display">-</span></p>
+                <p><strong>Email:</strong> <span id="customer-email-display">-</span></p>
+            </div>
+
+            <div class="balance-summary">
+                <div class="balance-card total">
+                    <span>Saldo Total</span>
+                    <strong id="balance-total">-</strong>
+                </div>
+                <div class="balance-card main">
+                    <span>Saldo Principal</span>
+                    <strong id="balance-main">-</strong>
+                </div>
+                <div class="balance-card bonus">
+                    <span>Saldo de Bônus</span>
+                    <strong id="balance-bonus">-</strong>
+                </div>
+            </div>
+
+            <div class="actions">
+                <h3>Ações</h3>
+                <button id="add-package-btn" class="button-primary">Adicionar Pacote Pré-Pago</button>
+                </div>
+            
+            <div class="ledger-container">
+                <h3>Extrato Financeiro (Ledger)</h3>
+                <table id="ledger-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Tipo</th>
+                            <th>Descrição</th>
+                            <th class="amount">Valor (R$)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ledger-table-body">
+                        </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <div id="new-customer-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Novo Cliente</h2>
+            <form id="new-customer-form">
+                <div class="form-group">
+                    <label for="new-name">Nome *</label>
+                    <input type="text" id="new-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-phone">Telefone</label>
+                    <input type="tel" id="new-phone">
+                </div>
+                <div class="form-group">
+                    <label for="new-email">Email</label>
+                    <input type="email" id="new-email">
+                </div>
+                <div class="form-group">
+                    <label for="new-address">Endereço</label>
+                    <input type="text" id="new-address">
+                </div>
+                <button type="submit" class="button-primary">Salvar Cliente</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="add-package-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Adicionar Pacote Pré-Pago</h2>
+            <form id="add-package-form">
+                <p>O valor deve ser informado em <strong>centavos</strong>.</p>
+                <div class="form-group">
+                    <label for="package-paid-amount">Valor Pago (Ex: 20000 para R$200,00) *</label>
+                    <input type="number" id="package-paid-amount" required min="1">
+                </div>
+                <div class="form-group">
+                    <label for="package-bonus-amount">Valor do Bônus (Ex: 2000 para R$20,00) *</label>
+                    <input type="number" id="package-bonus-amount" required min="0">
+                </div>
+                <button type="submit" class="button-primary">Adicionar Pacote</button>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>
