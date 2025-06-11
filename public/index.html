@@ -3,126 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDV Lavanderia - Ledger</title>
+    <title>PDV Lavanderia - Aprimorado</title>
     <link rel="stylesheet" href="css/styles.css">
     <script src="js/main.js" type="module" defer></script>
 </head>
 <body>
-
     <div id="loading-overlay" class="hidden">
         <div class="spinner"></div>
     </div>
-
     <div id="message-container"></div>
 
     <header class="main-header">
-        <h1>PDV Lavanderia</h1>
+        <div class="order-info">
+            <span id="order-id-display">Pedido #NOVO</span>
+            </div>
+        <div class="client-actions">
+            <span>Cliente:</span>
+            <div class="search-container">
+                <input type="text" id="customer-search-input" placeholder="Buscar Cliente...">
+                <div id="customer-suggestions" class="suggestions"></div>
+            </div>
+            <span id="customer-name-display">Nenhum</span>
+            <button id="new-customer-btn" class="header-btn">Novo Cliente</button>
+        </div>
     </header>
 
-    <main class="container">
-        <section id="customer-search-section" class="card">
-            <h2>Buscar Cliente</h2>
-            <div class="form-group">
-                <label for="customer-search-input">Nome do Cliente:</label>
-                <input type="text" id="customer-search-input" placeholder="Digite para buscar...">
-                <button id="new-customer-btn" class="button-primary">Novo Cliente</button>
-            </div>
-            <div id="customer-suggestions" class="suggestions"></div>
+    <main class="main-content">
+        <section id="product-selection-pane">
+            <div id="category-panel" class="panel">
+                </div>
+            <div id="product-list" class="panel">
+                </div>
         </section>
 
-        <section id="customer-details-section" class="card hidden">
-            <div class="customer-header">
-                <h2 id="customer-name-display">Nome do Cliente</h2>
-                <button id="close-customer-view-btn" class="button-secondary">X Fechar</button>
+        <section id="order-pane" class="panel">
+            <div class="order-items-header">
+                <h3>Itens do Pedido</h3>
             </div>
-            
-            <div class="customer-info">
-                <p><strong>Telefone:</strong> <span id="customer-phone-display">-</span></p>
-                <p><strong>Email:</strong> <span id="customer-email-display">-</span></p>
-            </div>
-
-            <div class="balance-summary">
-                <div class="balance-card total">
-                    <span>Saldo Total</span>
-                    <strong id="balance-total">-</strong>
-                </div>
-                <div class="balance-card main">
-                    <span>Saldo Principal</span>
-                    <strong id="balance-main">-</strong>
-                </div>
-                <div class="balance-card bonus">
-                    <span>Saldo de Bônus</span>
-                    <strong id="balance-bonus">-</strong>
-                </div>
-            </div>
-
-            <div class="actions">
-                <h3>Ações</h3>
-                <button id="add-package-btn" class="button-primary">Adicionar Pacote Pré-Pago</button>
-                </div>
-            
-            <div class="ledger-container">
-                <h3>Extrato Financeiro (Ledger)</h3>
-                <table id="ledger-table">
+            <div class="order-items-container">
+                <table id="order-items-table">
                     <thead>
                         <tr>
-                            <th>Data</th>
-                            <th>Tipo</th>
-                            <th>Descrição</th>
-                            <th class="amount">Valor (R$)</th>
+                            <th>Qtd.</th>
+                            <th>Produto</th>
+                            <th>V. Un.</th>
+                            <th>Subtotal</th>
+                            <th></th>
                         </tr>
                     </thead>
-                    <tbody id="ledger-table-body">
+                    <tbody id="order-items-tbody">
                         </tbody>
                 </table>
             </div>
         </section>
+
+        <aside id="actions-pane" class="panel">
+            <h4>Cliente Selecionado</h4>
+            <div id="customer-details-card">
+                <strong id="card-customer-name">Selecione um cliente</strong>
+                <p id="card-customer-balance">Saldo: R$ 0,00</p>
+            </div>
+            
+            <h4>Status do Pedido</h4>
+            <div id="order-status-options" class="options-group">
+                <button class="option-button selected" data-status="EM_ABERTO">EM ABERTO</button>
+                <button class="option-button" data-status="AGUARDANDO_PAGAMENTO">AG. PAGTO</button>
+                <button class="option-button" data-status="PAGO">PAGO</button>
+                <button class="option-button" data-status="CANCELADO">CANCELADO</button>
+            </div>
+
+            <div class="main-actions">
+                <button id="save-order-btn" class="action-btn save">💾 Salvar Pedido</button>
+                <button id="pay-order-btn" class="action-btn pay" disabled>💰 Pagar com Saldo</button>
+                <button id="new-order-btn" class="action-btn new">✨ Novo Pedido</button>
+            </div>
+        </aside>
     </main>
+    
+    <footer class="summary-footer">
+        <span id="footer-item-count">ITENS: 0</span>
+        <span id="footer-subtotal">SUBTOTAL: R$ 0,00</span>
+        <span id="footer-total">TOTAL: R$ 0,00</span>
+    </footer>
+
+    <template id="product-card-template">
+        <div class="product-card">
+            <span class="product-name"></span>
+            <span class="product-price"></span>
+        </div>
+    </template>
 
     <div id="new-customer-modal" class="modal hidden">
         <div class="modal-content">
             <span class="close-button">&times;</span>
             <h2>Novo Cliente</h2>
             <form id="new-customer-form">
-                <div class="form-group">
-                    <label for="new-name">Nome *</label>
-                    <input type="text" id="new-name" required>
-                </div>
-                <div class="form-group">
-                    <label for="new-phone">Telefone</label>
-                    <input type="tel" id="new-phone">
-                </div>
-                <div class="form-group">
-                    <label for="new-email">Email</label>
-                    <input type="email" id="new-email">
-                </div>
-                <div class="form-group">
-                    <label for="new-address">Endereço</label>
-                    <input type="text" id="new-address">
-                </div>
+                <div class="form-group"><label for="new-name">Nome *</label><input type="text" id="new-name" required></div>
+                <div class="form-group"><label for="new-phone">Telefone</label><input type="tel" id="new-phone"></div>
+                <div class="form-group"><label for="new-email">Email</label><input type="email" id="new-email"></div>
                 <button type="submit" class="button-primary">Salvar Cliente</button>
             </form>
         </div>
     </div>
-
-    <div id="add-package-modal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h2>Adicionar Pacote Pré-Pago</h2>
-            <form id="add-package-form">
-                <p>O valor deve ser informado em <strong>centavos</strong>.</p>
-                <div class="form-group">
-                    <label for="package-paid-amount">Valor Pago (Ex: 20000 para R$200,00) *</label>
-                    <input type="number" id="package-paid-amount" required min="1">
-                </div>
-                <div class="form-group">
-                    <label for="package-bonus-amount">Valor do Bônus (Ex: 2000 para R$20,00) *</label>
-                    <input type="number" id="package-bonus-amount" required min="0">
-                </div>
-                <button type="submit" class="button-primary">Adicionar Pacote</button>
-            </form>
-        </div>
-    </div>
-
 </body>
 </html>

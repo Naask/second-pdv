@@ -1,8 +1,6 @@
 // server.js - Ponto de Entrada da Aplicação
-// Carrega as variáveis de ambiente do arquivo .env
 require('dotenv').config();
 
-// Importação dos módulos necessários
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -11,60 +9,45 @@ const path = require('path');
 
 // Importação das rotas da aplicação
 const customerRoutes = require('./src/routes/customerRoutes');
+const productRoutes = require('./src/routes/productRoutes');
+const orderRoutes = require('./src/routes/orderRoutes'); // NOVA LINHA
 
-// Importação do módulo de banco de dados para garantir a inicialização
 require('./database/database');
 
-// Inicialização da aplicação Express
 const app = express();
 
-// --- Configuração dos Middlewares ---
-
-// Habilita o CORS para permitir requisições de diferentes origens (essencial para o frontend)
+// Middlewares
 app.use(cors());
-
-// Define headers de segurança HTTP para proteger a aplicação de vulnerabilidades conhecidas
 app.use(helmet());
-
-// Habilita o parsing de requisições com corpo em formato JSON
 app.use(express.json());
 
-// Limita a taxa de requisições para a API para prevenir ataques de força bruta/DoS
 const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 100, // Limita cada IP a 100 requisições por janela
+    windowMs: 15 * 60 * 1000, 
+    max: 250, // Limite um pouco maior para acomodar mais interações
     standardHeaders: true,
     legacyHeaders: false,
     message: 'Muitas requisições enviadas deste IP, por favor tente novamente após 15 minutos.',
 });
 app.use('/api/', apiLimiter);
 
-// --- Servir Arquivos Estáticos (Frontend) ---
-
-// Serve os arquivos da pasta 'public' (index.html, css, js)
+// Servir Arquivos Estáticos (Frontend)
 app.use(express.static(path.join(__dirname, 'public')));
 
-
-// --- Rotas da API ---
-
-// Agrupa todas as rotas de clientes sob o prefixo /api/v1/customers
+// Rotas da API
 app.use('/api/v1/customers', customerRoutes);
+app.use('/api/v1/products', productRoutes);
+app.use('/api/v1/orders', orderRoutes); // NOVA LINHA
 
-
-// --- Rota Principal e Tratamento de 404 ---
-
-// Rota para a página principal (caso o acesso seja direto à raiz)
+// Rota Principal e Tratamento de 404
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Middleware para tratar rotas não encontradas (404)
 app.use((req, res) => {
     res.status(404).json({ message: 'Endpoint não encontrado.' });
 });
 
-// --- Inicialização do Servidor ---
-
+// Inicialização do Servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`🚀 Servidor rodando com sucesso na porta ${PORT}`);

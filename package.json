@@ -1,29 +1,30 @@
 {
-    "name": "pdv-lavanderia-aprimorado",
-    "version": "1.0.0",
-    "description": "PDV aprimorado para lavanderia com sistema de ledger de cliente.",
-    "main": "server.js",
-    "scripts": {
-      "start": "node server.js",
-      "test": "echo \"Error: no test specified\" && exit 1"
-    },
-    "keywords": [
-      "pdv",
-      "pos",
-      "laundry",
-      "ledger",
-      "express",
-      "sqlite"
-    ],
-    "author": "Desenvolvido por Gemini",
-    "license": "ISC",
-    "dependencies": {
-      "better-sqlite3": "^11.1.2",
-      "cors": "^2.8.5",
-      "dotenv": "^16.4.5",
-      "express": "^4.19.2",
-      "express-rate-limit": "^7.3.1",
-      "helmet": "^7.1.0",
-      "joi": "^17.13.3"
-    }
+  "name": "pdv-lavanderia-aprimorado",
+  "version": "1.0.0",
+  "description": "PDV aprimorado para lavanderia com sistema de ledger de cliente.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node database/seed.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "pdv",
+    "pos",
+    "laundry",
+    "ledger",
+    "express",
+    "sqlite"
+  ],
+  "author": "Desenvolvido por Diego A. Nascimento",
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^11.1.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.3.1",
+    "helmet": "^7.1.0",
+    "joi": "^17.13.3"
   }
+}

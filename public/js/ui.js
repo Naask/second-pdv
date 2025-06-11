@@ -1,174 +1,227 @@
 // public/js/ui.js
+// Módulo responsável por toda a manipulação do DOM.
 
 // --- Cache de Elementos do DOM ---
-// Buscamos todos os elementos que vamos manipular uma única vez para melhor performance.
 const elements = {
+    // Overlays e Mensagens
     loadingOverlay: document.getElementById('loading-overlay'),
     messageContainer: document.getElementById('message-container'),
-    customerSearchSection: document.getElementById('customer-search-section'),
-    customerDetailsSection: document.getElementById('customer-details-section'),
+    // Header
+    orderIdDisplay: document.getElementById('order-id-display'),
     customerSearchInput: document.getElementById('customer-search-input'),
     customerSuggestions: document.getElementById('customer-suggestions'),
     customerNameDisplay: document.getElementById('customer-name-display'),
-    customerPhoneDisplay: document.getElementById('customer-phone-display'),
-    customerEmailDisplay: document.getElementById('customer-email-display'),
-    balanceTotal: document.getElementById('balance-total'),
-    balanceMain: document.getElementById('balance-main'),
-    balanceBonus: document.getElementById('balance-bonus'),
-    ledgerTableBody: document.getElementById('ledger-table-body'),
+    // Painel de Produtos
+    categoryPanel: document.getElementById('category-panel'),
+    productList: document.getElementById('product-list'),
+    productCardTemplate: document.getElementById('product-card-template'),
+    // Painel do Pedido
+    orderItemsTbody: document.getElementById('order-items-tbody'),
+    // Painel de Ações
+    cardCustomerName: document.getElementById('card-customer-name'),
+    cardCustomerBalance: document.getElementById('card-customer-balance'),
+    orderStatusOptions: document.getElementById('order-status-options'),
+    payOrderBtn: document.getElementById('pay-order-btn'),
+    // Rodapé
+    footerItemCount: document.getElementById('footer-item-count'),
+    footerSubtotal: document.getElementById('footer-subtotal'),
+    footerTotal: document.getElementById('footer-total'),
+    // Modais
     newCustomerModal: document.getElementById('new-customer-modal'),
-    addPackageModal: document.getElementById('add-package-modal'),
     newCustomerForm: document.getElementById('new-customer-form'),
-    addPackageForm: document.getElementById('add-package-form'),
 };
 
-/**
- * Mostra ou esconde o overlay de carregamento.
- * @param {boolean} isLoading - True para mostrar, false para esconder.
- */
-export function showLoading(isLoading) {
-    elements.loadingOverlay.classList.toggle('hidden', !isLoading);
-}
+// --- Funções Auxiliares ---
 
-/**
- * Exibe uma mensagem de feedback para o usuário.
- * @param {string} message - A mensagem a ser exibida.
- * @param {'success' | 'error'} type - O tipo da mensagem.
- */
+const formatCurrency = (amountInCents) => (amountInCents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+export const showLoading = (isLoading) => elements.loadingOverlay.classList.toggle('hidden', !isLoading);
+export const toggleModal = (modalId, show) => document.getElementById(modalId).classList.toggle('hidden', !show);
+export const clearForm = (formElement) => formElement.reset();
+
 export function showMessage(message, type = 'success') {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${type}`;
     messageDiv.textContent = message;
     elements.messageContainer.appendChild(messageDiv);
-
-    // Remove a mensagem após 4 segundos
-    setTimeout(() => {
-        messageDiv.remove();
-    }, 4000);
+    setTimeout(() => messageDiv.remove(), 4000);
 }
 
-/**
- * Formata um valor inteiro em centavos para uma string de moeda BRL.
- * @param {number} amountInCents - Ex: 2550
- * @returns {string} - Ex: "25,50"
- */
-function formatCurrency(amountInCents) {
-    return (amountInCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+// --- Funções de Renderização ---
 
 /**
- * Renderiza as sugestões de clientes abaixo da barra de busca.
- * @param {Array<object>} customers - A lista de clientes retornada pela API.
- * @param {function} onSelect - A função a ser chamada quando um cliente é selecionado.
+ * Renderiza os botões de categoria.
+ * @param {string[]} categories - Array com os nomes das categorias.
+ * @param {Function} onSelect - Callback a ser executado ao clicar, passando a categoria.
  */
-export function renderCustomerSuggestions(customers, onSelect) {
-    clearSuggestions();
-    customers.forEach(customer => {
-        const suggestionDiv = document.createElement('div');
-        suggestionDiv.textContent = `${customer.name} - ${customer.phone || 'Sem telefone'}`;
-        suggestionDiv.dataset.customerId = customer.customer_id;
-        suggestionDiv.addEventListener('click', () => onSelect(customer.customer_id));
-        elements.customerSuggestions.appendChild(suggestionDiv);
+export function renderCategories(categories, onSelect) {
+    elements.categoryPanel.innerHTML = ''; // Limpa antes de renderizar
+    const allButton = document.createElement('button');
+    allButton.className = 'category-button selected';
+    allButton.textContent = 'TODAS';
+    allButton.dataset.category = 'TODAS';
+    allButton.addEventListener('click', () => {
+        document.querySelectorAll('.category-button').forEach(btn => btn.classList.remove('selected'));
+        allButton.classList.add('selected');
+        onSelect('TODAS');
+    });
+    elements.categoryPanel.appendChild(allButton);
+
+    categories.forEach(category => {
+        const btn = document.createElement('button');
+        btn.className = 'category-button';
+        btn.textContent = category;
+        btn.dataset.category = category;
+        btn.addEventListener('click', () => {
+             document.querySelectorAll('.category-button').forEach(b => b.classList.remove('selected'));
+             btn.classList.add('selected');
+             onSelect(category);
+        });
+        elements.categoryPanel.appendChild(btn);
     });
 }
 
-export function clearSuggestions() {
-    elements.customerSuggestions.innerHTML = '';
+/**
+ * Renderiza os cards de produtos.
+ * @param {object[]} products - Array com os objetos de produto.
+ * @param {Function} onSelect - Callback a ser executado ao clicar, passando o produto.
+ */
+export function renderProducts(products, onSelect) {
+    elements.productList.innerHTML = '';
+    products.forEach(product => {
+        const card = elements.productCardTemplate.content.cloneNode(true);
+        const cardElement = card.querySelector('.product-card');
+        cardElement.querySelector('.product-name').textContent = product.name;
+        cardElement.querySelector('.product-price').textContent = formatCurrency(product.price);
+        cardElement.dataset.productId = product.product_id;
+        cardElement.dataset.category = product.category;
+        cardElement.addEventListener('click', () => onSelect(product));
+        elements.productList.appendChild(cardElement);
+    });
 }
 
 /**
- * Preenche a seção de detalhes do cliente com os dados, saldo e extrato.
- * @param {object} data - O objeto completo retornado por `getCustomerDetails`.
+ * Filtra os produtos visíveis com base na categoria selecionada.
+ * @param {string} category - A categoria para mostrar. 'TODAS' para mostrar todos.
  */
-export function renderCustomerDetails(data) {
-    const { details, balance, ledger } = data;
-    elements.customerNameDisplay.textContent = details.name;
-    elements.customerPhoneDisplay.textContent = details.phone || '-';
-    elements.customerEmailDisplay.textContent = details.email || '-';
-
-    elements.balanceTotal.textContent = formatCurrency(balance.totalBalance);
-    elements.balanceMain.textContent = formatCurrency(balance.mainBalance);
-    elements.balanceBonus.textContent = formatCurrency(balance.bonusBalance);
-
-    renderLedger(ledger);
-    showCustomerDetailsView();
+export function filterProducts(category) {
+    const products = elements.productList.querySelectorAll('.product-card');
+    products.forEach(p => {
+        p.classList.toggle('hidden', category !== 'TODAS' && p.dataset.category !== category);
+    });
 }
 
 /**
- * Renderiza as transações do ledger na tabela.
- * @param {Array<object>} ledger - A lista de transações.
+ * Renderiza a tabela de itens de um pedido.
+ * @param {object[]} items - Array com os itens do pedido.
+ * @param {Function} onRemove - Callback ao clicar para remover um item.
  */
-function renderLedger(ledger) {
-    elements.ledgerTableBody.innerHTML = ''; // Limpa a tabela antes de preencher
-    if (ledger.length === 0) {
-        elements.ledgerTableBody.innerHTML = '<tr><td colspan="4">Nenhuma transação encontrada.</td></tr>';
+function renderOrderItems(items, onRemove) {
+    elements.orderItemsTbody.innerHTML = '';
+    if (!items || items.length === 0) {
+        elements.orderItemsTbody.innerHTML = '<tr><td colspan="5">Adicione produtos ao pedido.</td></tr>';
         return;
     }
-
-    ledger.forEach(t => {
+    items.forEach(item => {
         const row = document.createElement('tr');
-        const transactionDate = new Date(t.timestamp).toLocaleString('pt-BR');
-        
-        let typeClass = 'transaction-type-neutral';
-        if (['PAYMENT_RECEIVED', 'BONUS_ADDED', 'BALANCE_CORRECTION_CREDIT'].includes(t.transaction_type)) {
-            typeClass = 'transaction-type-credit';
-        } else if (['SALE', 'BALANCE_CORRECTION_DEBIT'].includes(t.transaction_type)) {
-            typeClass = 'transaction-type-debit';
-        }
-
         row.innerHTML = `
-            <td>${transactionDate}</td>
-            <td class="${typeClass}">${t.transaction_type.replace(/_/g, ' ')}</td>
-            <td>${t.description}</td>
-            <td class="amount ${typeClass}">${formatCurrency(t.amount)}</td>
+            <td>${item.quantity}</td>
+            <td>${item.product_name}</td>
+            <td>${formatCurrency(item.unit_price)}</td>
+            <td>${formatCurrency(item.total_price)}</td>
+            <td><button class="remove-item-btn" data-item-id="${item.order_item_id}">&times;</button></td>
         `;
-        elements.ledgerTableBody.appendChild(row);
+        row.querySelector('.remove-item-btn').addEventListener('click', (e) => onRemove(e.target.dataset.itemId));
+        elements.orderItemsTbody.appendChild(row);
     });
 }
 
-/** Alterna a visibilidade entre a busca e a visão de detalhes do cliente. */
-function showCustomerDetailsView() {
-    elements.customerSearchSection.classList.add('hidden');
-    elements.customerDetailsSection.classList.remove('hidden');
-}
-
-export function showSearchView() {
-    elements.customerDetailsSection.classList.add('hidden');
-    elements.customerSearchSection.classList.remove('hidden');
-    elements.customerSearchInput.value = '';
-    elements.customerSearchInput.focus();
+/**
+ * Atualiza o rodapé de resumo com os totais do pedido.
+ * @param {object} order - O objeto do pedido.
+ */
+function updateSummaryFooter(order) {
+    const itemCount = order.items?.length || 0;
+    const totalAmount = order?.total_amount || 0;
+    elements.footerItemCount.textContent = `ITENS: ${itemCount}`;
+    elements.footerSubtotal.textContent = `SUBTOTAL: ${formatCurrency(totalAmount)}`;
+    elements.footerTotal.textContent = `TOTAL: ${formatCurrency(totalAmount)}`;
 }
 
 /**
- * Controla a visibilidade de um modal.
- * @param {HTMLElement} modalElement - O elemento do modal a ser controlado.
- * @param {boolean} show - True para mostrar, false para esconder.
+ * Função principal para renderizar o estado de um pedido na tela.
+ * @param {object} order - O objeto do pedido completo.
+ * @param {Function} onRemoveItem - Callback para o evento de remover item.
  */
-export function toggleModal(modalElement, show) {
-    if (show) {
-        modalElement.classList.remove('hidden');
+export function renderOrder(order, onRemoveItem) {
+    if (!order) {
+        resetOrderView();
+        return;
+    }
+    elements.orderIdDisplay.textContent = `Pedido #${order.order_id.substring(0, 8)}`;
+    renderOrderItems(order.items, onRemoveItem);
+    updateSummaryFooter(order);
+
+    // Atualiza status visual
+    elements.orderStatusOptions.querySelectorAll('.option-button').forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.status === order.status);
+    });
+
+    // Habilita/desabilita o botão de pagamento
+    const canPay = order.status === 'AGUARDANDO_PAGAMENTO' || order.status === 'EM_ABERTO';
+    elements.payOrderBtn.disabled = !canPay;
+}
+
+/**
+ * Atualiza as informações do cliente na tela.
+ * @param {object|null} customer - O objeto do cliente ou null para limpar.
+ */
+export function renderCustomerInfo(customer, balance) {
+    if (customer) {
+        elements.customerNameDisplay.textContent = customer.name;
+        elements.cardCustomerName.textContent = customer.name;
+        elements.cardCustomerBalance.textContent = `Saldo: ${formatCurrency(balance.totalBalance)}`;
     } else {
-        modalElement.classList.add('hidden');
+        elements.customerNameDisplay.textContent = 'Nenhum';
+        elements.cardCustomerName.textContent = 'Selecione um cliente';
+        elements.cardCustomerBalance.textContent = 'Saldo: R$ 0,00';
     }
 }
 
-/** Funções para obter dados de formulários e limpar. */
+/**
+ * Renderiza as sugestões de busca de cliente.
+ * @param {object[]} customers - Array de clientes.
+ * @param {Function} onSelect - Callback ao selecionar um cliente.
+ */
+export function renderCustomerSuggestions(customers, onSelect) {
+    elements.customerSuggestions.innerHTML = '';
+    elements.customerSuggestions.classList.toggle('hidden', customers.length === 0);
+    customers.forEach(c => {
+        const div = document.createElement('div');
+        div.textContent = c.name;
+        div.addEventListener('click', () => onSelect(c.customer_id));
+        elements.customerSuggestions.appendChild(div);
+    });
+}
+export const clearCustomerSuggestions = () => elements.customerSuggestions.classList.add('hidden');
+
+/**
+ * Reseta a interface para um estado de "novo pedido".
+ */
+export function resetOrderView() {
+    elements.orderIdDisplay.textContent = 'Pedido #NOVO';
+    renderOrderItems([]);
+    updateSummaryFooter({});
+    renderCustomerInfo(null, { totalBalance: 0 });
+    elements.customerSearchInput.value = '';
+}
+
+/**
+ * Obtém os dados do formulário de novo cliente.
+ */
 export function getNewCustomerFormData() {
     return {
-        name: document.getElementById('new-name').value,
-        phone: document.getElementById('new-phone').value,
-        email: document.getElementById('new-email').value,
-        address: document.getElementById('new-address').value,
+        name: document.getElementById('new-name').value.trim(),
+        phone: document.getElementById('new-phone').value.trim(),
+        email: document.getElementById('new-email').value.trim(),
     };
-}
-
-export function getAddPackageFormData() {
-    return {
-        paidAmount: parseInt(document.getElementById('package-paid-amount').value, 10),
-        bonusAmount: parseInt(document.getElementById('package-bonus-amount').value, 10),
-    };
-}
-
-export function clearForm(formElement) {
-    formElement.reset();
 }

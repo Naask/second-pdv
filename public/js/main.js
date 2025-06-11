@@ -1,48 +1,86 @@
 // public/js/main.js
+// Módulo principal que orquestra toda a aplicação no frontend.
+
 import * as api from './api.js';
 import * as ui from './ui.js';
 
-// --- Estado da Aplicação ---
-let currentCustomerId = null;
-let debounceTimer;
+// --- Estado Central da Aplicação ---
+// Manter o estado em um único objeto ajuda na organização.
+const state = {
+    products: [],
+    categories: [],
+    currentCustomer: null,
+    currentOrder: null,
+    debounceTimer: null,
+};
 
-// --- Manipuladores de Eventos (Handlers) ---
+// --- Funções de Manipulação de Estado e Lógica ---
 
 /**
- * Lida com a busca de clientes enquanto o usuário digita.
- * Utiliza debouncing para evitar chamadas excessivas à API.
- * @param {Event} event - O evento de input.
+ * Reseta o estado da aplicação para um novo pedido.
  */
-async function handleCustomerSearch(event) {
-    clearTimeout(debounceTimer);
-    const searchTerm = event.target.value;
-
-    if (searchTerm.length < 2) {
-        ui.clearSuggestions();
-        return;
-    }
-
-    debounceTimer = setTimeout(async () => {
-        try {
-            const customers = await api.searchCustomers(searchTerm);
-            ui.renderCustomerSuggestions(customers, handleSelectCustomer);
-        } catch (error) {
-            ui.showMessage(error.message, 'error');
-        }
-    }, 300); // Aguarda 300ms após o usuário parar de digitar
+function resetApplication() {
+    state.currentCustomer = null;
+    state.currentOrder = null;
+    ui.resetOrderView();
 }
 
 /**
- * Lida com a seleção de um cliente a partir das sugestões.
+ * Lida com a seleção de um cliente e a criação de um novo pedido para ele.
  * @param {string} customerId - O ID do cliente selecionado.
  */
-async function handleSelectCustomer(customerId) {
-    currentCustomerId = customerId;
-    ui.clearSuggestions();
+async function selectCustomerAndCreateOrder(customerId) {
+    ui.clearCustomerSuggestions();
     ui.showLoading(true);
     try {
-        const customerData = await api.getCustomerDetails(customerId);
-        ui.renderCustomerDetails(customerData);
+        // Busca os detalhes e o saldo do cliente
+        const customerDetails = await api.getCustomerDetails(customerId);
+        state.currentCustomer = customerDetails.details;
+        ui.renderCustomerInfo(state.currentCustomer, customerDetails.balance);
+        
+        // Cria um novo pedido para o cliente selecionado
+        const newOrder = await api.createOrder(customerId);
+        state.currentOrder = newOrder;
+        ui.renderOrder(state.currentOrder, handleRemoveItem);
+
+    } catch (error) {
+        ui.showMessage(error.message, 'error');
+        resetApplication(); // Reseta em caso de erro
+    } finally {
+        ui.showLoading(false);
+    }
+}
+
+/**
+ * Lida com a adição de um produto ao pedido atual.
+ * @param {object} product - O objeto do produto selecionado.
+ */
+async function handleAddProductToOrder(product) {
+    if (!state.currentOrder || !state.currentCustomer) {
+        ui.showMessage('Por favor, selecione um cliente primeiro.', 'error');
+        return;
+    }
+
+    // Para produtos por KG, podemos solicitar a quantidade com um prompt
+    let quantity = 1;
+    if (product.unit_of_measure === 'KG') {
+        const input = prompt(`Digite a quantidade em KG para "${product.name}":`, '1.0');
+        if (input === null) return; // Usuário cancelou
+        quantity = parseFloat(input.replace(',', '.')) || 0;
+        if (quantity <= 0) {
+            ui.showMessage('Quantidade inválida.', 'error');
+            return;
+        }
+    }
+    
+    ui.showLoading(true);
+    try {
+        const updatedOrder = await api.addItemToOrder(state.currentOrder.order_id, {
+            productId: product.product_id,
+            quantity: quantity,
+        });
+        state.currentOrder = updatedOrder;
+        ui.renderOrder(state.currentOrder, handleRemoveItem);
     } catch (error) {
         ui.showMessage(error.message, 'error');
     } finally {
@@ -51,26 +89,75 @@ async function handleSelectCustomer(customerId) {
 }
 
 /**
- * Lida com o envio do formulário de novo cliente.
- * @param {Event} event - O evento de submit do formulário.
+ * Lida com a remoção de um item do pedido.
+ * @param {string} orderItemId - O ID do item a ser removido.
  */
-async function handleNewCustomerSubmit(event) {
-    event.preventDefault(); // Impede o recarregamento da página
-    const customerData = ui.getNewCustomerFormData();
-    
-    if (!customerData.name) {
-        ui.showMessage('O nome do cliente é obrigatório.', 'error');
+async function handleRemoveItem(orderItemId) {
+    if (!state.currentOrder) return;
+    ui.showLoading(true);
+    try {
+        await api.removeItemFromOrder(state.currentOrder.order_id, orderItemId);
+        // Após remover, busca o estado mais recente do pedido
+        const updatedOrder = await api.getOrderDetails(state.currentOrder.order_id);
+        state.currentOrder = updatedOrder;
+        ui.renderOrder(state.currentOrder, handleRemoveItem);
+        ui.showMessage('Item removido com sucesso.', 'success');
+    } catch (error) {
+        ui.showMessage(error.message, 'error');
+    } finally {
+        ui.showLoading(false);
+    }
+}
+
+/**
+ * Lida com a mudança de status do pedido.
+ * @param {string} newStatus - O novo status para o pedido.
+ */
+async function handleStatusChange(newStatus) {
+    if (!state.currentOrder) return;
+    if (state.currentOrder.status === newStatus) return; // Não faz nada se o status for o mesmo
+
+    ui.showLoading(true);
+    try {
+        const updatedOrder = await api.updateOrderStatus(state.currentOrder.order_id, newStatus);
+        state.currentOrder = updatedOrder;
+        ui.renderOrder(state.currentOrder, handleRemoveItem);
+        ui.showMessage(`Status alterado para ${newStatus.replace('_', ' ')}`, 'success');
+    } catch (error) {
+        ui.showMessage(error.message, 'error');
+    } finally {
+        ui.showLoading(false);
+    }
+}
+
+/**
+ * Lida com o pagamento do pedido usando o saldo do cliente.
+ */
+async function handlePayment() {
+    if (!state.currentOrder || !state.currentCustomer) return;
+    if (state.currentOrder.status === 'PAGO') {
+        ui.showMessage('Este pedido já foi pago.', 'error');
+        return;
+    }
+
+    if (!confirm(`Confirmar pagamento de ${ui.formatCurrency(state.currentOrder.total_amount)} para o pedido #${state.currentOrder.order_id.substring(0,8)}?`)) {
         return;
     }
 
     ui.showLoading(true);
     try {
-        const newCustomer = await api.createCustomer(customerData);
-        ui.showMessage(`Cliente "${newCustomer.name}" criado com sucesso!`, 'success');
-        ui.toggleModal(document.getElementById('new-customer-modal'), false);
-        ui.clearForm(event.target);
-        // Seleciona o cliente recém-criado
-        handleSelectCustomer(newCustomer.customer_id);
+        await api.processPaymentWithBalance(state.currentOrder.order_id);
+        // Atualiza tanto o pedido quanto o saldo do cliente na tela
+        const updatedOrder = await api.getOrderDetails(state.currentOrder.order_id);
+        const updatedCustomer = await api.getCustomerDetails(state.currentCustomer.customer_id);
+
+        state.currentOrder = updatedOrder;
+        state.currentCustomer = updatedCustomer.details;
+
+        ui.renderOrder(state.currentOrder, handleRemoveItem);
+        ui.renderCustomerInfo(state.currentCustomer, updatedCustomer.balance);
+        ui.showMessage('Pagamento realizado com sucesso!', 'success');
+
     } catch (error) {
         ui.showMessage(error.message, 'error');
     } finally {
@@ -78,69 +165,65 @@ async function handleNewCustomerSubmit(event) {
     }
 }
 
-/**
- * Lida com o envio do formulário de adição de pacote pré-pago.
- * @param {Event} event - O evento de submit do formulário.
- */
-async function handleAddPackageSubmit(event) {
-    event.preventDefault();
-    const packageData = ui.getAddPackageFormData();
 
-    if (!packageData.paidAmount || packageData.bonusAmount === null) {
-        ui.showMessage('Ambos os campos são obrigatórios.', 'error');
-        return;
-    }
-    
+/**
+ * Função de inicialização da aplicação.
+ */
+async function init() {
+    console.log("Inicializando PDV...");
     ui.showLoading(true);
-    try {
-        await api.addPrepaidPackage(currentCustomerId, packageData);
-        ui.showMessage('Pacote adicionado com sucesso!', 'success');
-        ui.toggleModal(document.getElementById('add-package-modal'), false);
-        ui.clearForm(event.target);
-        // Atualiza os dados na tela para refletir o novo saldo
-        handleSelectCustomer(currentCustomerId);
-    } catch (error) {
-        ui.showMessage(error.message, 'error');
-    } finally {
-        ui.showLoading(false);
-    }
-}
 
-
-/**
- * Inicializa todos os event listeners da aplicação.
- */
-function initializeEventListeners() {
-    // --- Elementos de busca e visualização ---
-    document.getElementById('customer-search-input').addEventListener('input', handleCustomerSearch);
-    document.getElementById('close-customer-view-btn').addEventListener('click', ui.showSearchView);
-    
-    // --- Modais ---
-    const newCustomerModal = document.getElementById('new-customer-modal');
-    const addPackageModal = document.getElementById('add-package-modal');
-
-    // Botões para abrir modais
-    document.getElementById('new-customer-btn').addEventListener('click', () => ui.toggleModal(newCustomerModal, true));
-    document.getElementById('add-package-btn').addEventListener('click', () => ui.toggleModal(addPackageModal, true));
-
-    // Botões para fechar modais
-    newCustomerModal.querySelector('.close-button').addEventListener('click', () => ui.toggleModal(newCustomerModal, false));
-    addPackageModal.querySelector('.close-button').addEventListener('click', () => ui.toggleModal(addPackageModal, false));
-    
-    // Fechar modal ao clicar fora do conteúdo
-    window.addEventListener('click', (event) => {
-        if (event.target === newCustomerModal) ui.toggleModal(newCustomerModal, false);
-        if (event.target === addPackageModal) ui.toggleModal(addPackageModal, false);
+    // Configura os event listeners
+    document.getElementById('customer-search-input').addEventListener('input', (e) => {
+        clearTimeout(state.debounceTimer);
+        state.debounceTimer = setTimeout(async () => {
+            const searchTerm = e.target.value;
+            if (searchTerm.length > 1) {
+                const customers = await api.searchCustomers(searchTerm);
+                ui.renderCustomerSuggestions(customers, selectCustomerAndCreateOrder);
+            } else {
+                ui.clearCustomerSuggestions();
+            }
+        }, 300);
     });
 
-    // --- Formulários ---
-    document.getElementById('new-customer-form').addEventListener('submit', handleNewCustomerSubmit);
-    document.getElementById('add-package-form').addEventListener('submit', handleAddPackageSubmit);
+    document.getElementById('new-customer-btn').addEventListener('click', () => ui.toggleModal('new-customer-modal', true));
+    document.getElementById('new-customer-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = ui.getNewCustomerFormData();
+        if (!data.name) return ui.showMessage('Nome é obrigatório.', 'error');
+        
+        ui.showLoading(true);
+        const newCustomer = await api.createCustomer(data);
+        ui.toggleModal('new-customer-modal', false);
+        ui.clearForm(e.target);
+        ui.showMessage('Cliente criado!', 'success');
+        selectCustomerAndCreateOrder(newCustomer.customer_id);
+    });
+    
+    document.getElementById('new-order-btn').addEventListener('click', resetApplication);
+    document.getElementById('pay-order-btn').addEventListener('click', handlePayment);
+    document.getElementById('order-status-options').addEventListener('click', (e) => {
+        if(e.target.classList.contains('option-button')) {
+            handleStatusChange(e.target.dataset.status);
+        }
+    });
+
+    // Carrega dados iniciais
+    try {
+        const initialData = await api.getInitialData();
+        state.products = initialData.products;
+        state.categories = initialData.categories;
+        ui.renderCategories(state.categories, (category) => ui.filterProducts(category));
+        ui.renderProducts(state.products, handleAddProductToOrder);
+    } catch (error) {
+        ui.showMessage(error.message, 'error');
+    } finally {
+        ui.showLoading(false);
+    }
+    
+    resetApplication();
 }
 
-// --- Ponto de Entrada da Aplicação ---
-// Garante que o DOM está totalmente carregado antes de executar o script.
-document.addEventListener('DOMContentLoaded', () => {
-    initializeEventListeners();
-    console.log('Aplicação PDV Lavanderia inicializada.');
-});
+// Ponto de entrada: espera o DOM carregar para iniciar a aplicação.
+document.addEventListener('DOMContentLoaded', init);
