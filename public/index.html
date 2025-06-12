@@ -16,12 +16,16 @@
     <header class="main-header">
         <div class="order-info">
             <span id="order-id-display">Pedido #NOVO</span>
+            <div class="search-container">
+                <input type="text" id="order-search-input" class="header-input" placeholder="Buscar Pedido...">
+                <div id="order-suggestions" class="suggestions hidden"></div>
             </div>
+        </div>
         <div class="client-actions">
             <span>Cliente:</span>
             <div class="search-container">
                 <input type="text" id="customer-search-input" placeholder="Buscar Cliente...">
-                <div id="customer-suggestions" class="suggestions"></div>
+                <div id="customer-suggestions" class="suggestions hidden"></div>
             </div>
             <span id="customer-name-display">Nenhum</span>
             <button id="new-customer-btn" class="header-btn">Novo Cliente</button>
@@ -29,10 +33,10 @@
     </header>
 
     <main class="main-content">
-        <section id="product-selection-pane">
-            <div id="category-panel" class="panel">
+        <section id="product-selection-pane" class="panel">
+            <div id="category-panel" class="panel-section">
                 </div>
-            <div id="product-list" class="panel">
+            <div id="product-list" class="panel-section scrollable">
                 </div>
         </section>
 
@@ -40,7 +44,7 @@
             <div class="order-items-header">
                 <h3>Itens do Pedido</h3>
             </div>
-            <div class="order-items-container">
+            <div id="order-items-container" class="panel-section scrollable">
                 <table id="order-items-table">
                     <thead>
                         <tr>
@@ -73,7 +77,6 @@
             </div>
 
             <div class="main-actions">
-                <button id="save-order-btn" class="action-btn save">💾 Salvar Pedido</button>
                 <button id="pay-order-btn" class="action-btn pay" disabled>💰 Pagar com Saldo</button>
                 <button id="new-order-btn" class="action-btn new">✨ Novo Pedido</button>
             </div>

@@ -148,6 +148,31 @@ function updateSummaryFooter(order) {
 }
 
 /**
+ * Renderiza as sugestões de busca de pedido.
+ * @param {object[]} orders - Array de pedidos.
+ * @param {Function} onSelect - Callback ao selecionar um pedido.
+ */
+export function renderOrderSuggestions(orders, onSelect) {
+    const suggestionsDiv = document.getElementById('order-suggestions');
+    suggestionsDiv.innerHTML = '';
+    suggestionsDiv.classList.toggle('hidden', orders.length === 0);
+    orders.forEach(o => {
+        const div = document.createElement('div');
+        div.textContent = `Pedido #${o.order_id} (${o.customer_name})`;
+        div.addEventListener('click', () => onSelect(o.order_id));
+        suggestionsDiv.appendChild(div);
+    });
+}
+
+export function clearOrderSuggestions() {
+    const suggestionsDiv = document.getElementById('order-suggestions');
+    if (suggestionsDiv) {
+        suggestionsDiv.innerHTML = '';
+        suggestionsDiv.classList.add('hidden');
+    }
+}
+
+/**
  * Função principal para renderizar o estado de um pedido na tela.
  * @param {object} order - O objeto do pedido completo.
  * @param {Function} onRemoveItem - Callback para o evento de remover item.
@@ -157,7 +182,7 @@ export function renderOrder(order, onRemoveItem) {
         resetOrderView();
         return;
     }
-    elements.orderIdDisplay.textContent = `Pedido #${order.order_id.substring(0, 8)}`;
+    elements.orderIdDisplay.textContent = `Pedido #${order.order_id}`;
     renderOrderItems(order.items, onRemoveItem);
     updateSummaryFooter(order);
 

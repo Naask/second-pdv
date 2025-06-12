@@ -4,23 +4,66 @@
 const db = require('../../database/database');
 const crypto = require('crypto');
 const ledgerService = require('./ledgerService'); // Importamos o ledger para registrar transações!
+const { customAlphabet } = require('nanoid');
+
+// DEFINIÇÃO DO NOSSO GERADOR DE ID CUSTOMIZADO
+// Usamos um alfabeto sem caracteres ambíguos (como 0/O, 1/I/l)
+// E definimos o tamanho para 8 caracteres.
+const generateOrderId = customAlphabet('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 8);
 
 /**
  * Cria um novo pedido vazio para um cliente.
  * @param {string} customerId - O ID do cliente para o qual o pedido está sendo criado.
  * @returns {object} O objeto do pedido recém-criado.
  */
+/**
+ * Cria um novo pedido vazio para um cliente com um ID curto e aleatório.
+ * @param {string} customerId - O ID do cliente.
+ * @returns {object} O objeto do pedido recém-criado com seu ID customizado.
+ */
 function createOrder(customerId) {
-    const orderId = crypto.randomUUID();
+    // Geramos nosso novo ID curto e aleatório. Ex: '4B3D-A9P1'
+    const orderId = generateOrderId();
+    
     const sql = `
         INSERT INTO orders (order_id, customer_id, status) 
         VALUES (?, ?, 'EM_ABERTO')
     `;
+    
+    // Inserimos o novo pedido com nosso ID gerado.
     db.prepare(sql).run(orderId, customerId);
-
-    // Retorna os detalhes do pedido recém-criado
+    
+    // Buscamos e retornamos o pedido completo.
     return getOrderDetails(orderId);
 }
+
+/**
+ * Busca pedidos cujo ID comece com o termo de busca.
+ * @param {string} partialId - O início do ID do pedido a ser buscado.
+ * @returns {Array<object>} Uma lista de pedidos correspondentes, incluindo o nome do cliente.
+ */
+function searchOrdersById(partialId) {
+    try {
+        const sql = `
+            SELECT 
+                o.order_id,
+                o.status,
+                c.name as customer_name
+            FROM orders o
+            JOIN customers c ON o.customer_id = c.customer_id
+            WHERE o.order_id LIKE ? 
+            ORDER BY o.created_at DESC
+            LIMIT 10
+        `;
+        // O '%' é um curinga que diz "qualquer coisa depois do termo de busca"
+        const orders = db.prepare(sql).all(`${partialId}%`);
+        return orders;
+    } catch (err) {
+        console.error('Erro ao buscar pedidos por ID parcial:', err);
+        throw new Error('Falha ao buscar pedidos.');
+    }
+}
+
 
 /**
  * Adiciona um item a um pedido existente.
@@ -168,4 +211,5 @@ module.exports = {
     getOrderDetails,
     updateOrderStatus,
     processPaymentWithBalance,
+    searchOrdersById,
 };

@@ -50,17 +50,22 @@ body {
     min-width: 200px;
 }
 
+.search-container {
+    position: relative; 
+}
+
 .suggestions {
     position: absolute;
-    top: 100%;
-    left: 70px; /* Alinha com o início do input */
-    width: 200px;
+    top: 100%; /* Aparecer logo abaixo do input */
+    left: 0;   /* Alinhar com o início do container */
+    width: 220px; /* Definir uma largura um pouco maior */
     background-color: var(--panel-bg);
     border: 1px solid var(--border-color);
     border-top: none;
     z-index: 100;
     max-height: 250px;
     overflow-y: auto;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 .suggestions div {
     padding: 10px;
@@ -73,6 +78,14 @@ body {
 
 .header-btn {
     padding: 5px 10px;
+}
+
+.header-input {
+    padding: 5px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--text-light);
+    color: var(--text-dark);
 }
 
 /* --- Layout Principal --- */

@@ -20,6 +20,20 @@ async function handleCreateOrder(req, res) {
     }
 }
 
+async function handleSearchOrders(req, res) {
+    try {
+        const { id } = req.query;
+        if (!id) {
+            return res.status(400).json({ message: 'O parâmetro de busca "id" é obrigatório.' });
+        }
+        const orders = orderService.searchOrdersById(id);
+        res.status(200).json(orders);
+    } catch (err) {
+        console.error('Erro em handleSearchOrders:', err);
+        res.status(500).json({ message: 'Erro interno ao buscar pedidos.' });
+    }
+}
+
 /**
  * Lida com a busca dos detalhes de um pedido específico.
  */
@@ -119,4 +133,5 @@ module.exports = {
     handleRemoveItemFromOrder,
     handleUpdateOrderStatus,
     handleProcessPayment,
+    handleSearchOrders,
 };

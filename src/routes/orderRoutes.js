@@ -9,11 +9,16 @@ const {
     handleRemoveItemFromOrder,
     handleUpdateOrderStatus,
     handleProcessPayment,
+    handleSearchOrders // <--- ESTA É A LINHA QUE FALTAVA NA IMPORTAÇÃO
 } = require('../controllers/orderController');
 
 const router = express.Router();
 
 // --- Rotas de Pedidos ---
+
+// Buscar pedidos por ID parcial
+// GET /api/v1/orders/search?id=...
+router.get('/search', handleSearchOrders);
 
 // Criar um novo pedido
 // POST /api/v1/orders
@@ -33,7 +38,6 @@ router.delete('/:orderId/items/:orderItemId', handleRemoveItemFromOrder);
 
 // Atualizar o status de um pedido
 // PATCH /api/v1/orders/:orderId/status 
-// Usamos PATCH aqui pois é uma atualização parcial do recurso
 router.patch('/:orderId/status', handleUpdateOrderStatus);
 
 // Processar o pagamento de um pedido
