@@ -111,11 +111,12 @@ export function filterProducts(category) {
 }
 
 /**
- * Renderiza a tabela de itens de um pedido.
+ * Renderiza a tabela de itens de um pedido com quantidades editáveis.
  * @param {object[]} items - Array com os itens do pedido.
  * @param {Function} onRemove - Callback ao clicar para remover um item.
+ * @param {Function} onQuantityChange - Callback ao alterar a quantidade de um item.
  */
-function renderOrderItems(items, onRemove) {
+function renderOrderItems(items, onRemove, onQuantityChange) {
     elements.orderItemsTbody.innerHTML = '';
     if (!items || items.length === 0) {
         elements.orderItemsTbody.innerHTML = '<tr><td colspan="5">Adicione produtos ao pedido.</td></tr>';
@@ -123,25 +124,48 @@ function renderOrderItems(items, onRemove) {
     }
     items.forEach(item => {
         const row = document.createElement('tr');
+        const itemTotalPrice = (item.unit_price || 0) * (item.quantity || 0);
+
         row.innerHTML = `
-            <td>${item.quantity}</td>
+            <td>
+                <input 
+                    type="number" 
+                    class="quantity-input" 
+                    value="${item.quantity}" 
+                    data-item-id="${item.order_item_id}"
+                    min="0.1" 
+                    step="${item.unit_of_measure === 'KG' ? '0.1' : '1'}"
+                >
+            </td>
             <td>${item.product_name}</td>
             <td>${formatCurrency(item.unit_price)}</td>
-            <td>${formatCurrency(item.total_price)}</td>
+            <td>${formatCurrency(itemTotalPrice)}</td>
             <td><button class="remove-item-btn" data-item-id="${item.order_item_id}">&times;</button></td>
         `;
+        
         row.querySelector('.remove-item-btn').addEventListener('click', (e) => onRemove(e.target.dataset.itemId));
+        row.querySelector('.quantity-input').addEventListener('change', (e) => {
+            onQuantityChange(e.target.dataset.itemId, parseFloat(e.target.value));
+        });
+
         elements.orderItemsTbody.appendChild(row);
     });
 }
 
+
 /**
- * Atualiza o rodapé de resumo com os totais do pedido.
- * @param {object} order - O objeto do pedido.
+ * Atualiza o rodapé de resumo com os totais calculados a partir dos itens em tela.
+ * @param {object} order - O objeto do pedido em memória.
  */
 function updateSummaryFooter(order) {
-    const itemCount = order.items?.length || 0;
-    const totalAmount = order?.total_amount || 0;
+    const itemCount = order?.items?.length || 0;
+    
+    // Calcula o total dinamicamente a partir dos itens do rascunho
+    const totalAmount = order?.items?.reduce((sum, item) => {
+        const itemTotal = (item.unit_price || 0) * (item.quantity || 0);
+        return sum + itemTotal;
+    }, 0) || 0;
+
     elements.footerItemCount.textContent = `ITENS: ${itemCount}`;
     elements.footerSubtotal.textContent = `SUBTOTAL: ${formatCurrency(totalAmount)}`;
     elements.footerTotal.textContent = `TOTAL: ${formatCurrency(totalAmount)}`;
@@ -178,14 +202,15 @@ export function clearOrderSuggestions() {
  * @param {object} order - O objeto do pedido completo.
  * @param {Function} onRemoveItem - Callback para o evento de remover item.
  */
-export function renderOrder(order, onRemoveItem) {
+export function renderOrder(order, onRemoveItem, onQuantityChange) {
     if (!order) {
-        resetOrderView();
+        resetOrderView(true);
         return;
     }
     
-    elements.orderIdDisplay.textContent = `Pedido #${order.order_id}`;
-    renderOrderItems(order.items, onRemoveItem);
+    elements.orderIdDisplay.textContent = `Pedido #${order.order_id.substring(0, 8)}`;
+    // Passando o novo callback para a função que desenha os itens
+    renderOrderItems(order.items, onRemoveItem, onQuantityChange);
     updateSummaryFooter(order);
 
     // Atualiza campo de data/hora para retirada
@@ -254,13 +279,21 @@ export const clearCustomerSuggestions = () => elements.customerSuggestions.class
 
 /**
  * Reseta a interface para um estado de "novo pedido".
+ * @param {boolean} clearCustomer - Se true, limpa também as informações do cliente.
  */
-export function resetOrderView() {
+export function resetOrderView(clearCustomer = true) {
     elements.orderIdDisplay.textContent = 'Pedido #NOVO';
     renderOrderItems([]);
     updateSummaryFooter({});
-    renderCustomerInfo(null, { totalBalance: 0 });
-    elements.customerSearchInput.value = '';
+    document.getElementById('pickup-datetime-input').value = '';
+    
+    // Desmarca todos os botões de status
+    document.querySelectorAll('.option-button').forEach(btn => btn.classList.remove('selected'));
+    
+    if (clearCustomer) {
+        renderCustomerInfo(null, { totalBalance: 0 });
+        elements.customerSearchInput.value = '';
+    }
 }
 
 /**

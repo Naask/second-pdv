@@ -1,4 +1,4 @@
-// public/js/main.js - VERSÃO FINAL CORRIGIDA (SALVAMENTO EXPLÍCITO + BUSCA DE PEDIDO)
+// public/js/main.js - VERSÃO FINAL E COMPLETA
 
 import * as api from './api.js';
 import * as ui from './ui.js';
@@ -8,6 +8,7 @@ const state = {
     products: [],
     categories: [],
     currentCustomer: null,
+    currentBalance: null,
     currentOrder: null,
     debounceTimer: null,
 };
@@ -22,20 +23,33 @@ function generateShortId() {
     return id;
 }
 
-// --- Funções de Lógica e Manipulação de Estado (Handlers) ---
+// --- Funções de Lógica e Handlers ---
 
+/**
+ * Reseta a aplicação para o estado inicial, limpando tudo.
+ */
 function resetApplication() {
     state.currentCustomer = null;
     state.currentOrder = null;
-    ui.resetOrderView();
-    document.getElementById('customer-search-input').value = '';
-    document.getElementById('order-search-input').value = '';
-    document.getElementById('pickup-datetime-input').value = '';
+    state.currentBalance = null;
+    ui.resetOrderView(true);
 }
 
 /**
- * Busca um pedido existente e o carrega no estado da aplicação.
- * @param {string} orderId - O ID completo do pedido.
+ * Recalcula os totais do pedido em memória.
+ */
+function recalculateOrderTotals() {
+    if (!state.currentOrder) return;
+    let totalAmount = 0;
+    state.currentOrder.items.forEach(item => {
+        item.total_price = Math.round((item.unit_price || 0) * (item.quantity || 0));
+        totalAmount += item.total_price;
+    });
+    state.currentOrder.total_amount = totalAmount;
+}
+
+/**
+ * Carrega um pedido existente do backend e o exibe.
  */
 async function loadOrder(orderId) {
     if (!orderId) return;
@@ -48,9 +62,10 @@ async function loadOrder(orderId) {
         
         state.currentOrder = foundOrder;
         state.currentCustomer = customerDetails.details;
+        state.currentBalance = customerDetails.balance;
         
-        ui.renderCustomerInfo(state.currentCustomer, customerDetails.balance);
-        ui.renderOrder(state.currentOrder, handleRemoveItemFromOrder);
+        ui.renderCustomerInfo(state.currentCustomer, state.currentBalance);
+        ui.renderOrder(state.currentOrder, handleRemoveItemFromOrder, handleQuantityChange);
         ui.showMessage('Pedido carregado com sucesso!', 'success');
     } catch (error) {
         ui.showMessage(error.message, 'error');
@@ -61,31 +76,19 @@ async function loadOrder(orderId) {
 }
 
 /**
- * Cria um novo pedido em memória para o cliente selecionado.
- * @param {object} customer - O objeto do cliente.
- * @param {object} balance - O objeto de saldo do cliente.
+ * Apenas seleciona um cliente e exibe suas informações.
  */
-function createNewOrderInMemory(customer, balance) {
-    state.currentCustomer = customer;
-    state.currentOrder = {
-        order_id: generateShortId(),
-        customer_id: customer.customer_id,
-        items: [],
-        execution_status: 'AGUARDANDO_EXECUCAO',
-        payment_status: 'AGUARDANDO_PAGAMENTO',
-        pickup_datetime: '',
-        total_amount: 0,
-    };
-    ui.renderOrder(state.currentOrder, handleRemoveItemFromOrder);
-    ui.renderCustomerInfo(customer, balance);
-}
-
 async function selectCustomer(customerId) {
     ui.clearCustomerSuggestions();
     ui.showLoading(true);
     try {
         const customerDetails = await api.getCustomerDetails(customerId);
-        createNewOrderInMemory(customerDetails.details, customerDetails.balance);
+        state.currentCustomer = customerDetails.details;
+        state.currentBalance = customerDetails.balance;
+        state.currentOrder = null;
+
+        ui.renderCustomerInfo(state.currentCustomer, state.currentBalance);
+        ui.resetOrderView(false);
     } catch (error) {
         ui.showMessage(error.message, 'error');
     } finally {
@@ -93,41 +96,95 @@ async function selectCustomer(customerId) {
     }
 }
 
+/**
+ * Cria um novo pedido em memória para o cliente selecionado.
+ */
+function createNewOrderInMemory() {
+    if (!state.currentCustomer) {
+        return ui.showMessage('Selecione um cliente para iniciar um novo pedido.', 'error');
+    }
+    state.currentOrder = {
+        order_id: generateShortId(),
+        customer_id: state.currentCustomer.customer_id,
+        items: [],
+        execution_status: 'AGUARDANDO_EXECUCAO',
+        payment_status: 'AGUARDANDO_PAGAMENTO',
+        pickup_datetime: '',
+        total_amount: 0,
+    };
+    ui.renderOrder(state.currentOrder, handleRemoveItemFromOrder, handleQuantityChange);
+    ui.showMessage('Novo pedido iniciado. Adicione itens e salve.', 'success');
+}
+
+/**
+ * Adiciona um produto ao pedido em memória.
+ */
 function handleAddProductToOrder(product) {
-    if (!state.currentOrder) return ui.showMessage('Selecione um cliente para iniciar um pedido.', 'error');
+    if (!state.currentCustomer) return ui.showMessage('Por favor, selecione um cliente primeiro.', 'error');
+    if (!state.currentOrder) createNewOrderInMemory();
+
     state.currentOrder.items.push({
         order_item_id: `temp_item_${Date.now()}`,
         product_id: product.product_id,
         product_name: product.name,
-        quantity: 1,
+        quantity: product.unit_of_measure === 'KG' ? 1.0 : 1,
         unit_price: product.price,
+        unit_of_measure: product.unit_of_measure,
     });
-    ui.renderOrder(state.currentOrder, handleRemoveItemFromOrder);
+    
+    recalculateOrderTotals();
+    ui.renderOrder(state.currentOrder, handleRemoveItemFromOrder, handleQuantityChange);
 }
 
+/**
+ * Remove um item do pedido em memória.
+ */
 function handleRemoveItemFromOrder(orderItemId) {
     if (!state.currentOrder) return;
     state.currentOrder.items = state.currentOrder.items.filter(item => item.order_item_id != orderItemId);
-    ui.renderOrder(state.currentOrder, handleRemoveItemFromOrder);
+    recalculateOrderTotals();
+    ui.renderOrder(state.currentOrder, handleRemoveItemFromOrder, handleQuantityChange);
 }
 
+/**
+ * Altera a quantidade de um item e recalcula os totais.
+ */
+function handleQuantityChange(orderItemId, newQuantity) {
+    if (!state.currentOrder || newQuantity <= 0) return;
+    const item = state.currentOrder.items.find(i => i.order_item_id == orderItemId);
+    if (item) {
+        item.quantity = newQuantity;
+        recalculateOrderTotals();
+        ui.renderOrder(state.currentOrder, handleRemoveItemFromOrder, handleQuantityChange);
+    }
+}
+
+/**
+ * Altera um status (execução ou pagamento) no pedido em memória.
+ */
 function handleStatusChange(type, newStatus) {
     if (!state.currentOrder) return;
     if (type === 'execution') state.currentOrder.execution_status = newStatus;
     if (type === 'payment') state.currentOrder.payment_status = newStatus;
-    ui.renderOrder(state.currentOrder, handleRemoveItemFromOrder);
+    ui.renderOrder(state.currentOrder, handleRemoveItemFromOrder, handleQuantityChange);
 }
 
+/**
+ * Envia o rascunho do pedido para ser salvo no banco de dados.
+ */
 async function handleSaveOrder() {
-    if (!state.currentOrder) return ui.showMessage('Nenhum pedido ativo para salvar.', 'error');
-    
+    if (!state.currentOrder) {
+        if (state.currentCustomer) createNewOrderInMemory();
+        else return ui.showMessage('Nenhum cliente selecionado para salvar o pedido.', 'error');
+    }
     state.currentOrder.pickup_datetime = document.getElementById('pickup-datetime-input').value || null;
-
+    recalculateOrderTotals(); // Garante que os totais estão corretos antes de salvar
+    
     ui.showLoading(true);
     try {
         const savedOrder = await api.saveOrder(state.currentOrder);
         state.currentOrder = savedOrder;
-        ui.renderOrder(state.currentOrder, handleRemoveItemFromOrder);
+        ui.renderOrder(state.currentOrder, handleRemoveItemFromOrder, handleQuantityChange);
         ui.showMessage(`Pedido #${savedOrder.order_id} salvo com sucesso!`, 'success');
     } catch (error) {
         ui.showMessage(error.message, 'error');
@@ -137,19 +194,17 @@ async function handleSaveOrder() {
 }
 
 /**
- * Função de inicialização da aplicação.
+ * Função de inicialização da aplicação, configura todos os listeners.
  */
 async function init() {
     console.log("Inicializando PDV...");
-
-    // --- Configuração dos Event Listeners ---
+    
     const customerSearchInput = document.getElementById('customer-search-input');
     const orderSearchInput = document.getElementById('order-search-input');
 
-    // Listener para busca de CLIENTES
     customerSearchInput.addEventListener('input', (e) => {
         clearTimeout(state.debounceTimer);
-        state.debounceTimer = setTimeout(async () => {
+        setTimeout(async () => {
             const searchTerm = e.target.value;
             if (searchTerm.length > 1) {
                 const customers = await api.searchCustomers(searchTerm);
@@ -160,13 +215,10 @@ async function init() {
         }, 300);
     });
 
-    // Listener para busca de PEDIDOS (interativo)
     orderSearchInput.addEventListener('input', (e) => {
         clearTimeout(state.debounceTimer);
         const searchTerm = e.target.value.trim().toUpperCase();
-        if (searchTerm.length === 0) {
-            return ui.clearOrderSuggestions();
-        }
+        if (searchTerm.length === 0) return ui.clearOrderSuggestions();
         state.debounceTimer = setTimeout(async () => {
             try {
                 const orders = await api.searchOrders(searchTerm);
@@ -180,7 +232,6 @@ async function init() {
         }, 300);
     });
 
-    // Listener para buscar pedido ao pressionar ENTER
     orderSearchInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -189,17 +240,15 @@ async function init() {
         }
     });
 
-    document.getElementById('new-order-btn').addEventListener('click', resetApplication);
+    document.getElementById('new-order-btn').addEventListener('click', createNewOrderInMemory);
     document.getElementById('save-order-btn').addEventListener('click', handleSaveOrder);
     
     document.getElementById('execution-status-options').addEventListener('click', (e) => {
-        if(e.target.classList.contains('option-button')) handleStatusChange('execution', e.target.dataset.status);
+        if (e.target.classList.contains('option-button')) handleStatusChange('execution', e.target.dataset.status);
     });
     document.getElementById('payment-status-options').addEventListener('click', (e) => {
-        if(e.target.classList.contains('option-button')) handleStatusChange('payment', e.target.dataset.status);
+        if (e.target.classList.contains('option-button')) handleStatusChange('payment', e.target.dataset.status);
     });
-
-    // (Outros listeners como o de novo cliente podem ser adicionados aqui)
 
     // --- Carregamento de Dados Iniciais ---
     ui.showLoading(true);

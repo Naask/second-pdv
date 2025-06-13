@@ -9,10 +9,15 @@ const {
 const router = express.Router();
 
 // Rota principal para salvar (criar ou atualizar) um pedido
+// POST /api/v1/orders/save
 router.post('/save', handleSaveOrder);
 
-// Rotas para buscar pedidos
+// Rota para buscar pedidos por ID parcial
+// GET /api/v1/orders/search?id=...
 router.get('/search', handleSearchOrders);
+
+// Rota para obter detalhes de um pedido específico
+// GET /api/v1/orders/:orderId
 router.get('/:orderId', handleGetOrderDetails);
 
 module.exports = router;
