@@ -172,6 +172,7 @@ export function clearOrderSuggestions() {
     }
 }
 
+
 /**
  * Função principal para renderizar o estado de um pedido na tela.
  * @param {object} order - O objeto do pedido completo.
@@ -182,17 +183,39 @@ export function renderOrder(order, onRemoveItem) {
         resetOrderView();
         return;
     }
+    
     elements.orderIdDisplay.textContent = `Pedido #${order.order_id}`;
     renderOrderItems(order.items, onRemoveItem);
     updateSummaryFooter(order);
 
-    // Atualiza status visual
-    elements.orderStatusOptions.querySelectorAll('.option-button').forEach(btn => {
-        btn.classList.toggle('selected', btn.dataset.status === order.status);
+    // Atualiza campo de data/hora para retirada
+    const pickupInput = document.getElementById('pickup-datetime-input');
+    if (order.pickup_datetime) {
+        try {
+            // Formata para o padrão do input datetime-local (YYYY-MM-DDTHH:mm)
+            // A conversão para o fuso horário local é importante
+            const localDate = new Date(new Date(order.pickup_datetime).getTime() - (new Date().getTimezoneOffset() * 60000));
+            pickupInput.value = localDate.toISOString().slice(0, 16);
+        } catch (e) {
+            console.error("Data de retirada inválida:", order.pickup_datetime);
+            pickupInput.value = '';
+        }
+    } else {
+        pickupInput.value = '';
+    }
+    
+    // Atualiza status de execução
+    document.querySelectorAll('#execution-status-options .option-button').forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.status === order.execution_status);
     });
 
-    // Habilita/desabilita o botão de pagamento
-    const canPay = order.status === 'AGUARDANDO_PAGAMENTO' || order.status === 'EM_ABERTO';
+    // Atualiza status de pagamento
+    document.querySelectorAll('#payment-status-options .option-button').forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.status === order.payment_status);
+    });
+    
+    // Habilita/desabilita botão de pagamento com base em ambos os status
+    const canPay = order.payment_status === 'AGUARDANDO_PAGAMENTO' && order.total_amount > 0;
     elements.payOrderBtn.disabled = !canPay;
 }
 
