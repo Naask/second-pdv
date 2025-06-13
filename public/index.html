@@ -68,6 +68,8 @@
                 <p id="card-customer-balance">Saldo: R$ 0,00</p>
             </div>
             
+            <button id="view-customer-orders-btn" class="action-btn-secondary" disabled>Ver Pedidos do Cliente</button>
+            
             <div class="form-group">
                 <label for="pickup-datetime-input">Pronto para Retirada em:</label>
                 <input type="datetime-local" id="pickup-datetime-input" class="form-control">
@@ -86,11 +88,11 @@
                 <button class="option-button" data-status="AGUARDANDO_PAGAMENTO">AG. PAGAMENTO</button>
                 <button class="option-button" data-status="PAGO">PAGO</button>
             </div>
-        
+
             <div class="main-actions">
-                <button id="pay-order-btn" class="action-btn pay" disabled>💰 Pagar com Saldo</button>
-                <button id="save-order-btn" class="action-btn save">💾 Salvar Pedido</button> 
-                <button id="new-order-btn" class="action-btn new">✨ Novo Pedido</button>           </div>
+                <button id="save-order-btn" class="action-btn save">💾 Salvar Pedido</button>
+                <button id="new-order-btn" class="action-btn new">✨ Limpar Tela</button>
+            </div>
         </aside>
     </main>
     
@@ -119,5 +121,28 @@
             </form>
         </div>
     </div>
+
+    <div id="customer-orders-modal" class="modal hidden">
+        <div class="modal-content large">
+            <span class="close-button">&times;</span>
+            <h2>Pedidos de <span id="modal-customer-name"></span></h2>
+            <div class="table-container">
+                <table id="customer-orders-table">
+                    <thead>
+                        <tr>
+                            <th>Pedido #</th>
+                            <th>Data</th>
+                            <th>Status Serviço</th>
+                            <th>Status Pagto.</th>
+                            <th>Valor Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customer-orders-tbody">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

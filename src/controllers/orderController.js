@@ -24,6 +24,7 @@ async function handleGetOrderDetails(req, res) {
         }
         res.status(200).json(orderDetails);
     } catch (err) {
+        console.error('Erro em handleGetOrderDetails:', err);
         res.status(500).json({ message: 'Erro interno ao buscar detalhes do pedido.' });
     }
 }
@@ -31,13 +32,26 @@ async function handleGetOrderDetails(req, res) {
 async function handleSearchOrders(req, res) {
     try {
         const { id } = req.query;
-        if (!id) {
-            return res.status(200).json([]);
-        }
+        if (!id) return res.status(200).json([]);
         const orders = orderService.searchOrdersById(id);
         res.status(200).json(orders);
     } catch (err) {
+        console.error('Erro em handleSearchOrders:', err);
         res.status(500).json({ message: 'Erro interno ao buscar pedidos.' });
+    }
+}
+
+/**
+ * Lida com a busca de todos os pedidos de um cliente.
+ */
+async function handleGetCustomerOrders(req, res) {
+    try {
+        const { customerId } = req.params;
+        const orders = orderService.getOrdersByCustomer(customerId);
+        res.status(200).json(orders);
+    } catch (err) {
+        console.error("Erro em handleGetCustomerOrders:", err);
+        res.status(500).json({ message: 'Erro interno ao buscar os pedidos do cliente.' });
     }
 }
 
@@ -45,4 +59,5 @@ module.exports = {
     handleSaveOrder,
     handleGetOrderDetails,
     handleSearchOrders,
+    handleGetCustomerOrders, // Garante que a função seja exportada
 };

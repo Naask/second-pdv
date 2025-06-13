@@ -24,6 +24,8 @@ export const getInitialData = () => fetchJSON('/products/initial-data');
 export const searchCustomers = (name) => fetchJSON(`/customers/search?name=${encodeURIComponent(name)}`);
 export const getCustomerDetails = (customerId) => fetchJSON(`/customers/${customerId}/details`);
 export const createCustomer = (customerData) => fetchJSON('/customers', { method: 'POST', body: JSON.stringify(customerData) });
+export const getOrdersByCustomer = (customerId) => fetchJSON(`/customers/${customerId}/orders`);
+
 
 // --- Funções de Pedido Simplificadas ---
 export const getOrderDetails = (orderId) => fetchJSON(`/orders/${orderId}`);

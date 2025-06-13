@@ -9,6 +9,25 @@ function getOrderDetails(orderId) {
     return { ...order, items };
 }
 
+/**
+ * Busca todos os pedidos de um cliente específico.
+ * @param {string} customerId - O ID do cliente.
+ * @returns {Array<object>} Uma lista de pedidos do cliente.
+ */
+function getOrdersByCustomer(customerId) {
+    try {
+        const sql = `
+            SELECT * FROM orders 
+            WHERE customer_id = ? 
+            ORDER BY created_at DESC
+        `;
+        return db.prepare(sql).all(customerId);
+    } catch (err) {
+        console.error('Erro ao buscar pedidos do cliente:', err);
+        throw new Error('Falha ao buscar os pedidos do cliente.');
+    }
+}
+
 function searchOrdersById(partialId) {
     try {
         const sql = `
@@ -72,5 +91,6 @@ const saveOrder = db.transaction((orderData) => {
 module.exports = {
     saveOrder,
     getOrderDetails,
+    getOrdersByCustomer,
     searchOrdersById,
 };

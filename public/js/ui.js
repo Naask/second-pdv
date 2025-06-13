@@ -1,39 +1,28 @@
-// public/js/ui.js
-// Módulo responsável por toda a manipulação do DOM.
+// public/js/ui.js - VERSÃO FINAL E COMPLETA
 
 // --- Cache de Elementos do DOM ---
 const elements = {
-    // Overlays e Mensagens
     loadingOverlay: document.getElementById('loading-overlay'),
     messageContainer: document.getElementById('message-container'),
-    // Header
     orderIdDisplay: document.getElementById('order-id-display'),
     customerSearchInput: document.getElementById('customer-search-input'),
     customerSuggestions: document.getElementById('customer-suggestions'),
     customerNameDisplay: document.getElementById('customer-name-display'),
-    // Painel de Produtos
     categoryPanel: document.getElementById('category-panel'),
     productList: document.getElementById('product-list'),
     productCardTemplate: document.getElementById('product-card-template'),
-    // Painel do Pedido
     orderItemsTbody: document.getElementById('order-items-tbody'),
-    // Painel de Ações
     cardCustomerName: document.getElementById('card-customer-name'),
     cardCustomerBalance: document.getElementById('card-customer-balance'),
-    orderStatusOptions: document.getElementById('order-status-options'),
-    payOrderBtn: document.getElementById('pay-order-btn'),
-    // Rodapé
     footerItemCount: document.getElementById('footer-item-count'),
     footerSubtotal: document.getElementById('footer-subtotal'),
     footerTotal: document.getElementById('footer-total'),
-    // Modais
     newCustomerModal: document.getElementById('new-customer-modal'),
     newCustomerForm: document.getElementById('new-customer-form'),
 };
 
 // --- Funções Auxiliares ---
-
-const formatCurrency = (amountInCents) => (amountInCents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+export const formatCurrency = (amountInCents) => (amountInCents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 export const showLoading = (isLoading) => elements.loadingOverlay.classList.toggle('hidden', !isLoading);
 export const toggleModal = (modalId, show) => document.getElementById(modalId).classList.toggle('hidden', !show);
 export const clearForm = (formElement) => formElement.reset();
@@ -48,13 +37,8 @@ export function showMessage(message, type = 'success') {
 
 // --- Funções de Renderização ---
 
-/**
- * Renderiza os botões de categoria.
- * @param {string[]} categories - Array com os nomes das categorias.
- * @param {Function} onSelect - Callback a ser executado ao clicar, passando a categoria.
- */
 export function renderCategories(categories, onSelect) {
-    elements.categoryPanel.innerHTML = ''; // Limpa antes de renderizar
+    elements.categoryPanel.innerHTML = '';
     const allButton = document.createElement('button');
     allButton.className = 'category-button selected';
     allButton.textContent = 'TODAS';
@@ -80,11 +64,6 @@ export function renderCategories(categories, onSelect) {
     });
 }
 
-/**
- * Renderiza os cards de produtos.
- * @param {object[]} products - Array com os objetos de produto.
- * @param {Function} onSelect - Callback a ser executado ao clicar, passando o produto.
- */
 export function renderProducts(products, onSelect) {
     elements.productList.innerHTML = '';
     products.forEach(product => {
@@ -99,10 +78,6 @@ export function renderProducts(products, onSelect) {
     });
 }
 
-/**
- * Filtra os produtos visíveis com base na categoria selecionada.
- * @param {string} category - A categoria para mostrar. 'TODAS' para mostrar todos.
- */
 export function filterProducts(category) {
     const products = elements.productList.querySelectorAll('.product-card');
     products.forEach(p => {
@@ -110,12 +85,6 @@ export function filterProducts(category) {
     });
 }
 
-/**
- * Renderiza a tabela de itens de um pedido com quantidades editáveis.
- * @param {object[]} items - Array com os itens do pedido.
- * @param {Function} onRemove - Callback ao clicar para remover um item.
- * @param {Function} onQuantityChange - Callback ao alterar a quantidade de um item.
- */
 function renderOrderItems(items, onRemove, onQuantityChange) {
     elements.orderItemsTbody.innerHTML = '';
     if (!items || items.length === 0) {
@@ -152,30 +121,79 @@ function renderOrderItems(items, onRemove, onQuantityChange) {
     });
 }
 
-
-/**
- * Atualiza o rodapé de resumo com os totais calculados a partir dos itens em tela.
- * @param {object} order - O objeto do pedido em memória.
- */
 function updateSummaryFooter(order) {
     const itemCount = order?.items?.length || 0;
-    
-    // Calcula o total dinamicamente a partir dos itens do rascunho
-    const totalAmount = order?.items?.reduce((sum, item) => {
-        const itemTotal = (item.unit_price || 0) * (item.quantity || 0);
-        return sum + itemTotal;
-    }, 0) || 0;
+    const totalAmount = order?.items?.reduce((sum, item) => sum + ((item.unit_price || 0) * (item.quantity || 0)), 0) || 0;
 
     elements.footerItemCount.textContent = `ITENS: ${itemCount}`;
     elements.footerSubtotal.textContent = `SUBTOTAL: ${formatCurrency(totalAmount)}`;
     elements.footerTotal.textContent = `TOTAL: ${formatCurrency(totalAmount)}`;
 }
 
+export function renderOrder(order, onRemoveItem, onQuantityChange) {
+    if (!order) {
+        resetOrderView(false);
+        return;
+    }
+    
+    elements.orderIdDisplay.textContent = `Pedido #${order.order_id}`;
+    renderOrderItems(order.items, onRemoveItem, onQuantityChange);
+    updateSummaryFooter(order);
+
+    const pickupInput = document.getElementById('pickup-datetime-input');
+    if (order.pickup_datetime) {
+        try {
+            const localDate = new Date(new Date(order.pickup_datetime).getTime() - (new Date().getTimezoneOffset() * 60000));
+            pickupInput.value = localDate.toISOString().slice(0, 16);
+        } catch (e) { pickupInput.value = ''; }
+    } else {
+        pickupInput.value = '';
+    }
+    
+    document.querySelectorAll('#execution-status-options .option-button').forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.status === order.execution_status);
+    });
+
+    document.querySelectorAll('#payment-status-options .option-button').forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.status === order.payment_status);
+    });
+}
+
+export function renderCustomerInfo(customer, balance) {
+    const btn = document.getElementById('view-customer-orders-btn');
+    if (customer) {
+        elements.customerNameDisplay.textContent = customer.name;
+        elements.cardCustomerName.textContent = customer.name;
+        elements.cardCustomerBalance.textContent = `Saldo: ${formatCurrency(balance.totalBalance)}`;
+        btn.disabled = false;
+    } else {
+        elements.customerNameDisplay.textContent = 'Nenhum';
+        elements.cardCustomerName.textContent = 'Selecione um cliente';
+        elements.cardCustomerBalance.textContent = 'Saldo: R$ 0,00';
+        btn.disabled = true;
+    }
+}
+
+// --- FUNÇÃO QUE FALTAVA ---
 /**
- * Renderiza as sugestões de busca de pedido.
- * @param {object[]} orders - Array de pedidos.
- * @param {Function} onSelect - Callback ao selecionar um pedido.
+ * Renderiza as sugestões de busca de cliente.
+ * @param {object[]} customers - Array de clientes.
+ * @param {Function} onSelect - Callback ao selecionar um cliente.
  */
+export function renderCustomerSuggestions(customers, onSelect) {
+    elements.customerSuggestions.innerHTML = '';
+    elements.customerSuggestions.classList.toggle('hidden', customers.length === 0);
+    customers.forEach(customer => {
+        const div = document.createElement('div');
+        div.textContent = `${customer.name} - ${customer.phone || 'Sem telefone'}`;
+        div.addEventListener('click', () => onSelect(customer.customer_id));
+        elements.customerSuggestions.appendChild(div);
+    });
+}
+// -------------------------
+
+export const clearCustomerSuggestions = () => elements.customerSuggestions.classList.add('hidden');
+
 export function renderOrderSuggestions(orders, onSelect) {
     const suggestionsDiv = document.getElementById('order-suggestions');
     suggestionsDiv.innerHTML = '';
@@ -187,118 +205,54 @@ export function renderOrderSuggestions(orders, onSelect) {
         suggestionsDiv.appendChild(div);
     });
 }
-
-export function clearOrderSuggestions() {
+export const clearOrderSuggestions = () => {
     const suggestionsDiv = document.getElementById('order-suggestions');
-    if (suggestionsDiv) {
+    if(suggestionsDiv) {
         suggestionsDiv.innerHTML = '';
         suggestionsDiv.classList.add('hidden');
     }
-}
+};
 
+export function renderCustomerOrdersModal(customer, orders, onSelect) {
+    document.getElementById('modal-customer-name').textContent = customer.name;
+    const tbody = document.getElementById('customer-orders-tbody');
+    tbody.innerHTML = '';
 
-/**
- * Função principal para renderizar o estado de um pedido na tela.
- * @param {object} order - O objeto do pedido completo.
- * @param {Function} onRemoveItem - Callback para o evento de remover item.
- */
-export function renderOrder(order, onRemoveItem, onQuantityChange) {
-    if (!order) {
-        resetOrderView(true);
-        return;
-    }
-    
-    elements.orderIdDisplay.textContent = `Pedido #${order.order_id.substring(0, 8)}`;
-    // Passando o novo callback para a função que desenha os itens
-    renderOrderItems(order.items, onRemoveItem, onQuantityChange);
-    updateSummaryFooter(order);
-
-    // Atualiza campo de data/hora para retirada
-    const pickupInput = document.getElementById('pickup-datetime-input');
-    if (order.pickup_datetime) {
-        try {
-            // Formata para o padrão do input datetime-local (YYYY-MM-DDTHH:mm)
-            // A conversão para o fuso horário local é importante
-            const localDate = new Date(new Date(order.pickup_datetime).getTime() - (new Date().getTimezoneOffset() * 60000));
-            pickupInput.value = localDate.toISOString().slice(0, 16);
-        } catch (e) {
-            console.error("Data de retirada inválida:", order.pickup_datetime);
-            pickupInput.value = '';
-        }
+    if (orders.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5">Nenhum pedido encontrado para este cliente.</td></tr>';
     } else {
-        pickupInput.value = '';
+        orders.forEach(order => {
+            const row = document.createElement('tr');
+            row.className = 'clickable-row';
+            row.dataset.orderId = order.order_id;
+            row.innerHTML = `
+                <td>${order.order_id}</td>
+                <td>${new Date(order.created_at).toLocaleDateString('pt-BR')}</td>
+                <td>${(order.execution_status || '').replace(/_/g, ' ')}</td>
+                <td>${(order.payment_status || '').replace(/_/g, ' ')}</td>
+                <td>${formatCurrency(order.total_amount)}</td>
+            `;
+            row.addEventListener('click', () => onSelect(order.order_id));
+            tbody.appendChild(row);
+        });
     }
-    
-    // Atualiza status de execução
-    document.querySelectorAll('#execution-status-options .option-button').forEach(btn => {
-        btn.classList.toggle('selected', btn.dataset.status === order.execution_status);
-    });
-
-    // Atualiza status de pagamento
-    document.querySelectorAll('#payment-status-options .option-button').forEach(btn => {
-        btn.classList.toggle('selected', btn.dataset.status === order.payment_status);
-    });
-    
-    // Habilita/desabilita botão de pagamento com base em ambos os status
-    const canPay = order.payment_status === 'AGUARDANDO_PAGAMENTO' && order.total_amount > 0;
-    elements.payOrderBtn.disabled = !canPay;
+    toggleModal('customer-orders-modal', true);
 }
 
-/**
- * Atualiza as informações do cliente na tela.
- * @param {object|null} customer - O objeto do cliente ou null para limpar.
- */
-export function renderCustomerInfo(customer, balance) {
-    if (customer) {
-        elements.customerNameDisplay.textContent = customer.name;
-        elements.cardCustomerName.textContent = customer.name;
-        elements.cardCustomerBalance.textContent = `Saldo: ${formatCurrency(balance.totalBalance)}`;
-    } else {
-        elements.customerNameDisplay.textContent = 'Nenhum';
-        elements.cardCustomerName.textContent = 'Selecione um cliente';
-        elements.cardCustomerBalance.textContent = 'Saldo: R$ 0,00';
-    }
-}
-
-/**
- * Renderiza as sugestões de busca de cliente.
- * @param {object[]} customers - Array de clientes.
- * @param {Function} onSelect - Callback ao selecionar um cliente.
- */
-export function renderCustomerSuggestions(customers, onSelect) {
-    elements.customerSuggestions.innerHTML = '';
-    elements.customerSuggestions.classList.toggle('hidden', customers.length === 0);
-    customers.forEach(c => {
-        const div = document.createElement('div');
-        div.textContent = c.name;
-        div.addEventListener('click', () => onSelect(c.customer_id));
-        elements.customerSuggestions.appendChild(div);
-    });
-}
-export const clearCustomerSuggestions = () => elements.customerSuggestions.classList.add('hidden');
-
-/**
- * Reseta a interface para um estado de "novo pedido".
- * @param {boolean} clearCustomer - Se true, limpa também as informações do cliente.
- */
 export function resetOrderView(clearCustomer = true) {
     elements.orderIdDisplay.textContent = 'Pedido #NOVO';
     renderOrderItems([]);
     updateSummaryFooter({});
     document.getElementById('pickup-datetime-input').value = '';
-    
-    // Desmarca todos os botões de status
     document.querySelectorAll('.option-button').forEach(btn => btn.classList.remove('selected'));
     
     if (clearCustomer) {
         renderCustomerInfo(null, { totalBalance: 0 });
         elements.customerSearchInput.value = '';
+        clearCustomerSuggestions();
     }
 }
 
-/**
- * Obtém os dados do formulário de novo cliente.
- */
 export function getNewCustomerFormData() {
     return {
         name: document.getElementById('new-name').value.trim(),

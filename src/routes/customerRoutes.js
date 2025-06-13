@@ -1,34 +1,25 @@
 // src/routes/customerRoutes.js
 const express = require('express');
-const {
-    handleCreateCustomer,
-    handleSearchCustomers,
-    handleGetCustomerDetails,
-    handleRecordPrepaidPackage
-} = require('../controllers/customerController');
+const customerController = require('../controllers/customerController');
+// Importamos ambos os controladores pois esta rota de cliente usa uma função do controlador de pedidos
+const orderController = require('../controllers/orderController');
 
 const router = express.Router();
 
-// --- Definição das Rotas para Clientes e Operações Financeiras ---
+// --- Rotas de Clientes ---
 
-// Rota para criar um novo cliente
-// POST /api/v1/customers
-router.post('/', handleCreateCustomer);
+// Criar um novo cliente
+router.post('/', customerController.handleCreateCustomer);
 
-// Rota para buscar clientes por nome
-// GET /api/v1/customers/search?name=...
-router.get('/search', handleSearchCustomers);
+// Buscar clientes por nome
+router.get('/search', customerController.handleSearchCustomers);
 
-// Rota para obter os detalhes completos de um cliente específico (dados, saldo, extrato)
-// GET /api/v1/customers/:customerId/details
-router.get('/:customerId/details', handleGetCustomerDetails);
+// Obter os detalhes de um cliente específico (dados, saldo)
+router.get('/:customerId/details', customerController.handleGetCustomerDetails);
 
-// Rota para adicionar um pacote pré-pago (crédito + bônus) a um cliente
-// POST /api/v1/customers/:customerId/packages
-router.post('/:customerId/packages', handleRecordPrepaidPackage);
+// Obter todos os pedidos de um cliente específico
+// GET /api/v1/customers/:customerId/orders
+router.get('/:customerId/orders', orderController.handleGetCustomerOrders);
 
-// Futuramente, outras rotas podem ser adicionadas aqui
-// Ex: router.post('/:customerId/sales', handleRecordSale);
-// Ex: router.post('/:customerId/discounts', handleApplyDiscount);
 
 module.exports = router;

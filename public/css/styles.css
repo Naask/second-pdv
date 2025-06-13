@@ -237,6 +237,11 @@ body {
     border: none;
     cursor: pointer;
 }
+
+.modal-content.large { max-width: 800px; }
+.table-container { max-height: 60vh; overflow-y: auto; }
+.clickable-row:hover { background-color: var(--body-bg); cursor: pointer; }
+
 .action-btn.save { background-color: var(--primary-accent); color: white; }
 .action-btn.pay { background-color: var(--success-accent); color: white; }
 .action-btn.pay:disabled { background-color: #ccc; cursor: not-allowed; }
