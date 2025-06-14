@@ -34,9 +34,11 @@ async function loadOrder(orderId) {
         const foundOrder = await api.getOrderDetails(orderId);
         if (!foundOrder) throw new Error('Pedido não encontrado.');
         const customerDetails = await api.getCustomerDetails(foundOrder.customer_id);
+        
         state.currentOrder = foundOrder;
         state.currentCustomer = customerDetails.details;
         state.currentBalance = customerDetails.balance;
+        
         ui.renderCustomerInfo(state.currentCustomer, state.currentBalance);
         ui.renderOrder(state.currentOrder, handleRemoveItemFromOrder, handleQuantityChange);
         ui.showMessage('Pedido carregado com sucesso!', 'success');
@@ -195,12 +197,7 @@ function handleEditCustomerClick() {
 }
 
 async function init() {
-    console.log("Inicializando PDV...");
-    
-    const customerSearchInput = document.getElementById('customer-search-input');
-    const orderSearchInput = document.getElementById('order-search-input');
-
-    customerSearchInput.addEventListener('input', (e) => {
+    document.getElementById('customer-search-input').addEventListener('input', (e) => {
         clearTimeout(state.debounceTimer);
         setTimeout(async () => {
             const searchTerm = e.target.value;
@@ -215,6 +212,7 @@ async function init() {
         }, 300);
     });
 
+    const orderSearchInput = document.getElementById('order-search-input');
     orderSearchInput.addEventListener('input', (e) => {
         clearTimeout(state.debounceTimer);
         const searchTerm = e.target.value.trim().toUpperCase();
@@ -229,7 +227,6 @@ async function init() {
             } catch (error) { ui.showMessage(error.message, 'error'); }
         }, 300);
     });
-
     orderSearchInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -241,7 +238,6 @@ async function init() {
     document.getElementById('new-order-btn').addEventListener('click', resetApplication);
     document.getElementById('save-order-btn').addEventListener('click', handleSaveOrder);
     document.getElementById('view-customer-orders-btn').addEventListener('click', handleViewCustomerOrders);
-    
     document.getElementById('new-customer-btn').addEventListener('click', () => {
         state.isEditingCustomer = false;
         ui.populateCustomerModal(null);
@@ -249,10 +245,8 @@ async function init() {
     });
     document.getElementById('edit-customer-btn').addEventListener('click', handleEditCustomerClick);
     document.getElementById('new-customer-form').addEventListener('submit', handleCustomerSubmit);
-    
     document.getElementById('new-customer-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('new-customer-modal', false));
     document.getElementById('customer-orders-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('customer-orders-modal', false));
-    
     document.getElementById('execution-status-options').addEventListener('click', (e) => {
         if (e.target.classList.contains('option-button')) handleStatusChange('execution', e.target.dataset.status);
     });
@@ -273,7 +267,6 @@ async function init() {
     } finally {
         ui.showLoading(false);
     }
-    
     resetApplication();
 }
 

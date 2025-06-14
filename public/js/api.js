@@ -31,6 +31,10 @@ export const updateCustomer = (customerId, customerData) => fetchJSON(`/customer
     body: JSON.stringify(customerData),
 });
 
+export const addCredit = (customerId, data) => fetchJSON(`/customers/${customerId}/credits`, { method: 'POST', body: JSON.stringify(data) });
+export const addPrepaidPackage = (customerId, data) => fetchJSON(`/customers/${customerId}/packages`, { method: 'POST', body: JSON.stringify(data) });
+
+
 // --- Funções de Pedido Simplificadas ---
 export const getOrderDetails = (orderId) => fetchJSON(`/orders/${orderId}`);
 export const searchOrders = (partialId) => fetchJSON(`/orders/search?id=${encodeURIComponent(partialId)}`);

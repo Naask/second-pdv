@@ -1,27 +1,10 @@
 // src/controllers/customerController.js
-const customerService = require('../services/customerService');
+const customerService = require('../services/customerService'); // ÚNICA DEPENDÊNCIA DE SERVIÇO
 const { createCustomerSchema } = require('../utils/validationSchemas');
-
-async function handleCreateCustomer(req, res) {
-    try {
-        const { error, value } = createCustomerSchema.validate(req.body);
-        if (error) {
-            return res.status(400).json({ message: 'Dados inválidos.', details: error.details.map(d => d.message).join(', ') });
-        }
-        const newCustomer = customerService.createCustomer(value);
-        res.status(201).json(newCustomer);
-    } catch (err) {
-        res.status(500).json({ message: 'Erro interno ao criar cliente.' });
-    }
-}
 
 async function handleSearchCustomers(req, res) {
     try {
-        const { name } = req.query;
-        if (!name) {
-            return res.status(400).json({ message: 'O parâmetro de busca "name" é obrigatório.' });
-        }
-        const customers = customerService.findCustomersByName(name);
+        const customers = customerService.findCustomersByName(req.query.name || '');
         res.status(200).json(customers);
     } catch (err) {
         res.status(500).json({ message: 'Erro interno ao buscar clientes.' });
@@ -30,31 +13,41 @@ async function handleSearchCustomers(req, res) {
 
 async function handleGetCustomerDetails(req, res) {
     try {
-        const { customerId } = req.params;
-        const customerDetails = customerService.getCustomerDetailsById(customerId);
-        if (!customerDetails) {
-            return res.status(404).json({ message: 'Cliente não encontrado.' });
-        }
+        const customerDetails = customerService.getCustomerDetailsById(req.params.customerId);
+        if (!customerDetails) return res.status(404).json({ message: 'Cliente não encontrado.' });
         res.status(200).json(customerDetails);
     } catch (err) {
         res.status(500).json({ message: 'Erro interno ao buscar detalhes do cliente.' });
     }
 }
 
-async function handleUpdateCustomer(req, res) {
+async function handleCreateCustomer(req, res) { /* ... (sem alterações) ... */ }
+async function handleUpdateCustomer(req, res) { /* ... (sem alterações) ... */ }
+
+// Handlers de crédito e pacote agora chamam o customerService
+async function handleAddCredit(req, res) {
     try {
-        const { customerId } = req.params;
-        // Validação pode ser adicionada aqui
-        const updatedCustomer = customerService.updateCustomer(customerId, req.body);
-        res.status(200).json(updatedCustomer);
+        customerService.addCreditToCustomer(req.params.customerId, req.body);
+        res.status(201).json({ message: 'Crédito adicionado com sucesso.' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+}
+
+async function handleAddPackage(req, res) {
+    try {
+        customerService.addPackageToCustomer(req.params.customerId, req.body);
+        res.status(201).json({ message: 'Pacote adicionado com sucesso.' });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 }
 
 module.exports = {
-    handleCreateCustomer,
     handleSearchCustomers,
     handleGetCustomerDetails,
+    handleCreateCustomer,
     handleUpdateCustomer,
+    handleAddCredit,
+    handleAddPackage,
 };

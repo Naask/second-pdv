@@ -19,6 +19,11 @@ const elements = {
     footerTotal: document.getElementById('footer-total'),
     newCustomerModal: document.getElementById('new-customer-modal'),
     newCustomerForm: document.getElementById('new-customer-form'),
+    editCustomerBtn: document.getElementById('edit-customer-btn'),
+    viewCustomerOrdersBtn: document.getElementById('view-customer-orders-btn'),
+    addCreditBtn: document.getElementById('add-credit-btn'), // Novo
+    addPackageBtn: document.getElementById('add-package-btn'), // Novo
+
 };
 
 export const formatCurrency = (amountInCents) => (amountInCents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -154,12 +159,16 @@ export function renderCustomerInfo(customer, balance) {
         elements.cardCustomerBalance.textContent = `Saldo: ${formatCurrency(balance.totalBalance)}`;
         elements.viewCustomerOrdersBtn.disabled = false;
         elements.editCustomerBtn.disabled = false;
+        elements.addCreditBtn.disabled = false;
+        elements.addPackageBtn.disabled = false
     } else {
         elements.customerNameDisplay.textContent = 'Nenhum';
         elements.cardCustomerName.textContent = 'Selecione um cliente';
         elements.cardCustomerBalance.textContent = 'Saldo: R$ 0,00';
         elements.viewCustomerOrdersBtn.disabled = true;
         elements.editCustomerBtn.disabled = true;
+        elements.addCreditBtn.disabled = true;
+        elements.addPackageBtn.disabled = true;
     }
 }
 
