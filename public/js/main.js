@@ -76,7 +76,7 @@ function createNewOrderInMemory() {
         order_id: '#NOVO',
         customer_id: state.currentCustomer.customer_id,
         items: [],
-        execution_status: 'AGUARDANDO_EXECUCAO',
+        execution_status: 'EM_EXECUCAO',
         payment_status: 'AGUARDANDO_PAGAMENTO',
         pickup_datetime: '',
         completed_at: null,
