@@ -21,5 +21,7 @@ router.get('/:customerId/details', customerController.handleGetCustomerDetails);
 // GET /api/v1/customers/:customerId/orders
 router.get('/:customerId/orders', orderController.handleGetCustomerOrders);
 
+router.patch('/:customerId', customerController.handleUpdateCustomer);
+
 
 module.exports = router;

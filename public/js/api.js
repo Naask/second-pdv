@@ -26,6 +26,10 @@ export const getCustomerDetails = (customerId) => fetchJSON(`/customers/${custom
 export const createCustomer = (customerData) => fetchJSON('/customers', { method: 'POST', body: JSON.stringify(customerData) });
 export const getOrdersByCustomer = (customerId) => fetchJSON(`/customers/${customerId}/orders`);
 
+export const updateCustomer = (customerId, customerData) => fetchJSON(`/customers/${customerId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(customerData),
+});
 
 // --- Funções de Pedido Simplificadas ---
 export const getOrderDetails = (orderId) => fetchJSON(`/orders/${orderId}`);

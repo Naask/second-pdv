@@ -1,6 +1,4 @@
-// public/js/ui.js - VERSÃO COM A CORREÇÃO DO 'ReferenceError'
-
-// --- Cache de Elementos do DOM ---
+// public/js/ui.js
 const elements = {
     loadingOverlay: document.getElementById('loading-overlay'),
     messageContainer: document.getElementById('message-container'),
@@ -8,6 +6,8 @@ const elements = {
     customerSearchInput: document.getElementById('customer-search-input'),
     customerSuggestions: document.getElementById('customer-suggestions'),
     customerNameDisplay: document.getElementById('customer-name-display'),
+    editCustomerBtn: document.getElementById('edit-customer-btn'),
+    viewCustomerOrdersBtn: document.getElementById('view-customer-orders-btn'),
     categoryPanel: document.getElementById('category-panel'),
     productList: document.getElementById('product-list'),
     productCardTemplate: document.getElementById('product-card-template'),
@@ -19,12 +19,8 @@ const elements = {
     footerTotal: document.getElementById('footer-total'),
     newCustomerModal: document.getElementById('new-customer-modal'),
     newCustomerForm: document.getElementById('new-customer-form'),
-    // Adicionamos os botões aqui para um controle mais fácil
-    viewCustomerOrdersBtn: document.getElementById('view-customer-orders-btn'),
-    saveOrderBtn: document.getElementById('save-order-btn'),
 };
 
-// --- Funções Auxiliares ---
 export const formatCurrency = (amountInCents) => (amountInCents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 export const showLoading = (isLoading) => elements.loadingOverlay.classList.toggle('hidden', !isLoading);
 export const toggleModal = (modalId, show) => document.getElementById(modalId).classList.toggle('hidden', !show);
@@ -38,8 +34,6 @@ export function showMessage(message, type = 'success') {
     setTimeout(() => messageDiv.remove(), 4000);
 }
 
-// --- Funções de Renderização ---
-
 export function renderCategories(categories, onSelect) {
     elements.categoryPanel.innerHTML = '';
     const allButton = document.createElement('button');
@@ -52,7 +46,6 @@ export function renderCategories(categories, onSelect) {
         onSelect('TODAS');
     });
     elements.categoryPanel.appendChild(allButton);
-
     categories.forEach(category => {
         const btn = document.createElement('button');
         btn.className = 'category-button';
@@ -97,29 +90,15 @@ function renderOrderItems(items, onRemove, onQuantityChange) {
     items.forEach(item => {
         const row = document.createElement('tr');
         const itemTotalPrice = (item.unit_price || 0) * (item.quantity || 0);
-
         row.innerHTML = `
-            <td>
-                <input 
-                    type="number" 
-                    class="quantity-input" 
-                    value="${item.quantity}" 
-                    data-item-id="${item.order_item_id}"
-                    min="0.1" 
-                    step="${item.unit_of_measure === 'KG' ? '0.1' : '1'}"
-                >
-            </td>
+            <td><input type="number" class="quantity-input" value="${item.quantity}" data-item-id="${item.order_item_id}" min="0.1" step="${item.unit_of_measure === 'KG' ? '0.1' : '1'}"></td>
             <td>${item.product_name}</td>
             <td>${formatCurrency(item.unit_price)}</td>
             <td>${formatCurrency(itemTotalPrice)}</td>
             <td><button class="remove-item-btn" data-item-id="${item.order_item_id}">&times;</button></td>
         `;
-        
         row.querySelector('.remove-item-btn').addEventListener('click', (e) => onRemove(e.target.dataset.itemId));
-        row.querySelector('.quantity-input').addEventListener('change', (e) => {
-            onQuantityChange(e.target.dataset.itemId, parseFloat(e.target.value));
-        });
-
+        row.querySelector('.quantity-input').addEventListener('change', (e) => onQuantityChange(e.target.dataset.itemId, parseFloat(e.target.value)));
         elements.orderItemsTbody.appendChild(row);
     });
 }
@@ -127,7 +106,6 @@ function renderOrderItems(items, onRemove, onQuantityChange) {
 function updateSummaryFooter(order) {
     const itemCount = order?.items?.length || 0;
     const totalAmount = order?.items?.reduce((sum, item) => sum + ((item.unit_price || 0) * (item.quantity || 0)), 0) || 0;
-
     elements.footerItemCount.textContent = `ITENS: ${itemCount}`;
     elements.footerSubtotal.textContent = `SUBTOTAL: ${formatCurrency(totalAmount)}`;
     elements.footerTotal.textContent = `TOTAL: ${formatCurrency(totalAmount)}`;
@@ -138,69 +116,67 @@ export function renderOrder(order, onRemoveItem, onQuantityChange) {
         resetOrderView(false);
         return;
     }
-    
     elements.orderIdDisplay.textContent = order.isNew ? 'Pedido #NOVO' : `Pedido #${order.order_id}`;
     renderOrderItems(order.items, onRemoveItem, onQuantityChange);
     updateSummaryFooter(order);
-
-    const pickupInput = document.getElementById('pickup-datetime-input');
-    const completedInput = document.getElementById('completed-at-input');
-    const paidInput = document.getElementById('paid-at-input');
-
     const toInputFormat = (dateString) => {
         if (!dateString) return '';
         try {
             const date = new Date(dateString);
-            // Corrige o fuso horário para exibição local no input
             const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
             return localDate.toISOString().slice(0, 16);
         } catch (e) { return ''; }
     };
-    
-    pickupInput.value = toInputFormat(order.pickup_datetime);
-    completedInput.value = toInputFormat(order.completed_at);
-    paidInput.value = toInputFormat(order.paid_at);
-    
+    document.getElementById('pickup-datetime-input').value = toInputFormat(order.pickup_datetime);
+    document.getElementById('completed-at-input').value = toInputFormat(order.completed_at);
+    document.getElementById('paid-at-input').value = toInputFormat(order.paid_at);
     document.querySelectorAll('#execution-status-options .option-button').forEach(btn => {
         const isSelected = btn.dataset.status === order.execution_status;
         btn.classList.toggle('selected', isSelected);
         btn.classList.remove('status-green-light', 'status-green-dark');
         if (isSelected) {
-            if (['AGUARDANDO_RETIRADA', 'AGUARDANDO_ENTREGA'].includes(order.execution_status)) {
-                btn.classList.add('status-green-light');
-            } else if (order.execution_status === 'CONCLUIDO') {
-                btn.classList.add('status-green-dark');
-            }
+            if (['AGUARDANDO_RETIRADA', 'AGUARDANDO_ENTREGA'].includes(order.execution_status)) btn.classList.add('status-green-light');
+            else if (order.execution_status === 'CONCLUIDO') btn.classList.add('status-green-dark');
         }
     });
-
     document.querySelectorAll('#payment-status-options .option-button').forEach(btn => {
         const isSelected = btn.dataset.status === order.payment_status;
         btn.classList.toggle('selected', isSelected);
         btn.classList.remove('status-green-light');
-        if (isSelected && order.payment_status === 'PAGO') {
-            btn.classList.add('status-green-light');
-        }
+        if (isSelected && order.payment_status === 'PAGO') btn.classList.add('status-green-light');
     });
 }
 
-/**
- * Atualiza as informações do cliente na tela.
- * @param {object|null} customer - O objeto do cliente ou null para limpar.
- * @param {object} balance - O objeto de saldo do cliente.
- */
 export function renderCustomerInfo(customer, balance) {
-    // CORREÇÃO: A lógica que usava a variável 'order' foi removida desta função.
     if (customer) {
         elements.customerNameDisplay.textContent = customer.name;
         elements.cardCustomerName.textContent = customer.name;
         elements.cardCustomerBalance.textContent = `Saldo: ${formatCurrency(balance.totalBalance)}`;
         elements.viewCustomerOrdersBtn.disabled = false;
+        elements.editCustomerBtn.disabled = false;
     } else {
         elements.customerNameDisplay.textContent = 'Nenhum';
         elements.cardCustomerName.textContent = 'Selecione um cliente';
         elements.cardCustomerBalance.textContent = 'Saldo: R$ 0,00';
         elements.viewCustomerOrdersBtn.disabled = true;
+        elements.editCustomerBtn.disabled = true;
+    }
+}
+
+export function populateCustomerModal(customer) {
+    const title = document.querySelector('#new-customer-modal h2');
+    const form = elements.newCustomerForm;
+    if (customer) {
+        title.textContent = 'Editar Cliente';
+        form.querySelector('#new-name').value = customer.name;
+        form.querySelector('#new-phone').value = customer.phone || '';
+        form.querySelector('#new-email').value = customer.email || '';
+        // Supondo que você tenha um campo de endereço no modal
+        const addressInput = form.querySelector('#new-address');
+        if(addressInput) addressInput.value = customer.address || '';
+    } else {
+        title.textContent = 'Novo Cliente';
+        form.reset();
     }
 }
 
@@ -214,6 +190,7 @@ export function renderCustomerSuggestions(customers, onSelect) {
         elements.customerSuggestions.appendChild(div);
     });
 }
+
 export const clearCustomerSuggestions = () => elements.customerSuggestions.classList.add('hidden');
 
 export function renderOrderSuggestions(orders, onSelect) {
@@ -227,9 +204,10 @@ export function renderOrderSuggestions(orders, onSelect) {
         suggestionsDiv.appendChild(div);
     });
 }
+
 export const clearOrderSuggestions = () => {
     const suggestionsDiv = document.getElementById('order-suggestions');
-    if(suggestionsDiv) {
+    if (suggestionsDiv) {
         suggestionsDiv.innerHTML = '';
         suggestionsDiv.classList.add('hidden');
     }
@@ -246,13 +224,7 @@ export function renderCustomerOrdersModal(customer, orders, onSelect) {
             const row = document.createElement('tr');
             row.className = 'clickable-row';
             row.dataset.orderId = order.order_id;
-            row.innerHTML = `
-                <td>${order.order_id}</td>
-                <td>${new Date(order.created_at).toLocaleDateString('pt-BR')}</td>
-                <td>${(order.execution_status || '').replace(/_/g, ' ')}</td>
-                <td>${(order.payment_status || '').replace(/_/g, ' ')}</td>
-                <td>${formatCurrency(order.total_amount)}</td>
-            `;
+            row.innerHTML = `<td>${order.order_id}</td><td>${new Date(order.created_at).toLocaleDateString('pt-BR')}</td><td>${(order.execution_status || '').replace(/_/g, ' ')}</td><td>${(order.payment_status || '').replace(/_/g, ' ')}</td><td>${formatCurrency(order.total_amount)}</td>`;
             row.addEventListener('click', () => onSelect(order.order_id));
             tbody.appendChild(row);
         });
@@ -268,7 +240,6 @@ export function resetOrderView(clearCustomer = true) {
     document.getElementById('completed-at-input').value = '';
     document.getElementById('paid-at-input').value = '';
     document.querySelectorAll('.option-button').forEach(btn => btn.classList.remove('selected', 'status-green-light', 'status-green-dark'));
-    
     if (clearCustomer) {
         renderCustomerInfo(null, { totalBalance: 0 });
         elements.customerSearchInput.value = '';
@@ -281,5 +252,6 @@ export function getNewCustomerFormData() {
         name: document.getElementById('new-name').value.trim(),
         phone: document.getElementById('new-phone').value.trim(),
         email: document.getElementById('new-email').value.trim(),
+        address: document.getElementById('new-address') ? document.getElementById('new-address').value.trim() : '',
     };
 }

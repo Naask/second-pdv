@@ -1,13 +1,10 @@
+// public/js/main.js
 import * as api from './api.js';
 import * as ui from './ui.js';
 
 const state = {
-    products: [],
-    categories: [],
-    currentCustomer: null,
-    currentBalance: null,
-    currentOrder: null,
-    debounceTimer: null,
+    products: [], categories: [], currentCustomer: null, currentBalance: null,
+    currentOrder: null, debounceTimer: null, isEditingCustomer: false,
 };
 
 function generateShortId() {
@@ -21,6 +18,7 @@ function resetApplication() {
     state.currentCustomer = null;
     state.currentOrder = null;
     state.currentBalance = null;
+    state.isEditingCustomer = false;
     ui.resetOrderView(true);
 }
 
@@ -36,11 +34,9 @@ async function loadOrder(orderId) {
         const foundOrder = await api.getOrderDetails(orderId);
         if (!foundOrder) throw new Error('Pedido não encontrado.');
         const customerDetails = await api.getCustomerDetails(foundOrder.customer_id);
-        
         state.currentOrder = foundOrder;
         state.currentCustomer = customerDetails.details;
         state.currentBalance = customerDetails.balance;
-        
         ui.renderCustomerInfo(state.currentCustomer, state.currentBalance);
         ui.renderOrder(state.currentOrder, handleRemoveItemFromOrder, handleQuantityChange);
         ui.showMessage('Pedido carregado com sucesso!', 'success');
@@ -72,32 +68,46 @@ async function selectCustomer(customerId) {
 function createNewOrderInMemory() {
     if (!state.currentCustomer) return ui.showMessage('Selecione um cliente para iniciar um novo pedido.', 'error');
     state.currentOrder = {
-        isNew: true,
-        order_id: '#NOVO',
-        customer_id: state.currentCustomer.customer_id,
-        items: [],
-        execution_status: 'EM_EXECUCAO',
-        payment_status: 'AGUARDANDO_PAGAMENTO',
-        pickup_datetime: '',
-        completed_at: null,
-        paid_at: null,
-        total_amount: 0,
+        isNew: true, order_id: '#NOVO', customer_id: state.currentCustomer.customer_id, items: [],
+        execution_status: 'EM_EXECUCAO', payment_status: 'AGUARDANDO_PAGAMENTO',
+        pickup_datetime: '', completed_at: null, paid_at: null, total_amount: 0,
     };
     ui.renderOrder(state.currentOrder, handleRemoveItemFromOrder, handleQuantityChange);
     ui.showMessage('Novo pedido iniciado. Adicione itens e salve.', 'success');
 }
 
+async function handleCustomerSubmit(event) {
+    event.preventDefault();
+    const customerData = ui.getNewCustomerFormData();
+    if (!customerData.name) return ui.showMessage('Nome é obrigatório.', 'error');
+    ui.showLoading(true);
+    try {
+        let customerIdToSelect;
+        if (state.isEditingCustomer) {
+            const updatedCustomerData = await api.updateCustomer(state.currentCustomer.customer_id, customerData);
+            customerIdToSelect = updatedCustomerData.details.customer_id;
+            ui.showMessage('Cliente atualizado com sucesso!', 'success');
+        } else {
+            const newCustomer = await api.createCustomer(customerData);
+            customerIdToSelect = newCustomer.customer_id;
+            ui.showMessage('Cliente criado com sucesso!', 'success');
+        }
+        ui.toggleModal('new-customer-modal', false);
+        await selectCustomer(customerIdToSelect);
+    } catch (err) {
+        ui.showMessage(err.message, 'error');
+    } finally {
+        state.isEditingCustomer = false;
+        ui.showLoading(false);
+    }
+}
+
 function handleAddProductToOrder(product) {
     if (!state.currentCustomer) return ui.showMessage('Por favor, selecione um cliente primeiro.', 'error');
     if (!state.currentOrder) createNewOrderInMemory();
-    
     state.currentOrder.items.push({
-        order_item_id: `temp_item_${Date.now()}`,
-        product_id: product.product_id,
-        product_name: product.name,
-        quantity: product.unit_of_measure === 'KG' ? 1.0 : 1,
-        unit_price: product.price,
-        unit_of_measure: product.unit_of_measure,
+        order_item_id: `temp_item_${Date.now()}`, product_id: product.product_id, product_name: product.name,
+        quantity: product.unit_of_measure === 'KG' ? 1.0 : 1, unit_price: product.price, unit_of_measure: product.unit_of_measure,
     });
     recalculateOrderTotals();
     ui.renderOrder(state.currentOrder, handleRemoveItemFromOrder, handleQuantityChange);
@@ -125,21 +135,20 @@ function handleStatusChange(type, newStatus) {
     const now_as_string = new Date(Date.now() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
     if (type === 'execution') {
         state.currentOrder.execution_status = newStatus;
-        if (newStatus === 'CONCLUIDO' && !document.getElementById('completed-at-input').value) {
-            state.currentOrder.completed_at = now_as_string;
-        }
+        if (newStatus === 'CONCLUIDO' && !document.getElementById('completed-at-input').value) state.currentOrder.completed_at = now_as_string;
     }
     if (type === 'payment') {
         state.currentOrder.payment_status = newStatus;
-        if (newStatus === 'PAGO' && !document.getElementById('paid-at-input').value) {
-            state.currentOrder.paid_at = now_as_string;
-        }
+        if (newStatus === 'PAGO' && !document.getElementById('paid-at-input').value) state.currentOrder.paid_at = now_as_string;
     }
     ui.renderOrder(state.currentOrder, handleRemoveItemFromOrder, handleQuantityChange);
 }
 
 async function handleSaveOrder() {
-    if (!state.currentOrder) return ui.showMessage('Nenhum pedido ativo para salvar.', 'error');
+    if (!state.currentOrder) {
+        if (state.currentCustomer) createNewOrderInMemory();
+        else return ui.showMessage('Nenhum cliente selecionado para salvar o pedido.', 'error');
+    }
     if (state.currentOrder.isNew) {
         state.currentOrder.order_id = generateShortId();
         delete state.currentOrder.isNew;
@@ -178,28 +187,20 @@ async function handleViewCustomerOrders() {
     }
 }
 
-async function handleNewCustomerSubmit(event) {
-    event.preventDefault();
-    const customerData = ui.getNewCustomerFormData();
-    if (!customerData.name) return ui.showMessage('O campo "Nome" é obrigatório.', 'error');
-    ui.showLoading(true);
-    try {
-        const newCustomer = await api.createCustomer(customerData);
-        ui.toggleModal('new-customer-modal', false);
-        ui.clearForm(event.target);
-        ui.showMessage(`Cliente "${newCustomer.name}" criado com sucesso!`, 'success');
-        selectCustomer(newCustomer.customer_id);
-    } catch (err) {
-        ui.showMessage(err.message, 'error');
-    } finally {
-        ui.showLoading(false);
-    }
+function handleEditCustomerClick() {
+    if (!state.currentCustomer) return;
+    state.isEditingCustomer = true;
+    ui.populateCustomerModal(state.currentCustomer);
+    ui.toggleModal('new-customer-modal', true);
 }
 
 async function init() {
     console.log("Inicializando PDV...");
     
-    document.getElementById('customer-search-input').addEventListener('input', (e) => {
+    const customerSearchInput = document.getElementById('customer-search-input');
+    const orderSearchInput = document.getElementById('order-search-input');
+
+    customerSearchInput.addEventListener('input', (e) => {
         clearTimeout(state.debounceTimer);
         setTimeout(async () => {
             const searchTerm = e.target.value;
@@ -214,7 +215,6 @@ async function init() {
         }, 300);
     });
 
-    const orderSearchInput = document.getElementById('order-search-input');
     orderSearchInput.addEventListener('input', (e) => {
         clearTimeout(state.debounceTimer);
         const searchTerm = e.target.value.trim().toUpperCase();
@@ -229,6 +229,7 @@ async function init() {
             } catch (error) { ui.showMessage(error.message, 'error'); }
         }, 300);
     });
+
     orderSearchInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -237,12 +238,18 @@ async function init() {
         }
     });
 
-    document.getElementById('new-order-btn').addEventListener('click', createNewOrderInMemory);
+    document.getElementById('new-order-btn').addEventListener('click', resetApplication);
     document.getElementById('save-order-btn').addEventListener('click', handleSaveOrder);
     document.getElementById('view-customer-orders-btn').addEventListener('click', handleViewCustomerOrders);
     
-    document.getElementById('new-customer-btn').addEventListener('click', () => ui.toggleModal('new-customer-modal', true));
-    document.getElementById('new-customer-form').addEventListener('submit', handleNewCustomerSubmit);
+    document.getElementById('new-customer-btn').addEventListener('click', () => {
+        state.isEditingCustomer = false;
+        ui.populateCustomerModal(null);
+        ui.toggleModal('new-customer-modal', true);
+    });
+    document.getElementById('edit-customer-btn').addEventListener('click', handleEditCustomerClick);
+    document.getElementById('new-customer-form').addEventListener('submit', handleCustomerSubmit);
+    
     document.getElementById('new-customer-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('new-customer-modal', false));
     document.getElementById('customer-orders-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('customer-orders-modal', false));
     

@@ -27,4 +27,14 @@ function createCustomer(customerData) {
     return { customer_id: customerId, ...customerData };
 }
 
-module.exports = { findCustomersByName, getCustomerDetailsById, createCustomer };
+function updateCustomer(customerId, customerData) {
+    const { name, phone, email, address } = customerData;
+    const sql = `UPDATE customers SET name = ?, phone = ?, email = ?, address = ? WHERE customer_id = ?`;
+    const info = db.prepare(sql).run(name, phone, email, address, customerId);
+    if (info.changes === 0) {
+        throw new Error("Cliente não encontrado ou nenhum dado foi alterado.");
+    }
+    return getCustomerDetailsById(customerId);
+}
+
+module.exports = { findCustomersByName, getCustomerDetailsById, createCustomer, updateCustomer, };
