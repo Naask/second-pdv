@@ -1,22 +1,13 @@
 {
   "name": "pdv-lavanderia-aprimorado",
-  "version": "1.0.0",
-  "description": "PDV aprimorado para lavanderia com sistema de ledger de cliente.",
+  "version": "1.1.0",
+  "description": "PDV aprimorado para lavanderia com sistema de ledger e gestão de pedidos.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "seed": "node database/seed.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "seed": "node database/seed.js"
   },
-  "keywords": [
-    "pdv",
-    "pos",
-    "laundry",
-    "ledger",
-    "express",
-    "sqlite"
-  ],
-  "author": "Desenvolvido por Diego A. Nascimento",
+  "author": "Desenvolvido por Gemini",
   "license": "ISC",
   "dependencies": {
     "better-sqlite3": "^11.1.2",

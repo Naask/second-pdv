@@ -1,4 +1,4 @@
-// public/js/ui.js - VERSÃO FINAL E COMPLETA
+// public/js/ui.js - VERSÃO COM A CORREÇÃO DO 'ReferenceError'
 
 // --- Cache de Elementos do DOM ---
 const elements = {
@@ -19,6 +19,9 @@ const elements = {
     footerTotal: document.getElementById('footer-total'),
     newCustomerModal: document.getElementById('new-customer-modal'),
     newCustomerForm: document.getElementById('new-customer-form'),
+    // Adicionamos os botões aqui para um controle mais fácil
+    viewCustomerOrdersBtn: document.getElementById('view-customer-orders-btn'),
+    saveOrderBtn: document.getElementById('save-order-btn'),
 };
 
 // --- Funções Auxiliares ---
@@ -136,50 +139,71 @@ export function renderOrder(order, onRemoveItem, onQuantityChange) {
         return;
     }
     
-    elements.orderIdDisplay.textContent = `Pedido #${order.order_id}`;
+    elements.orderIdDisplay.textContent = order.isNew ? 'Pedido #NOVO' : `Pedido #${order.order_id}`;
     renderOrderItems(order.items, onRemoveItem, onQuantityChange);
     updateSummaryFooter(order);
 
     const pickupInput = document.getElementById('pickup-datetime-input');
-    if (order.pickup_datetime) {
+    const completedInput = document.getElementById('completed-at-input');
+    const paidInput = document.getElementById('paid-at-input');
+
+    const toInputFormat = (dateString) => {
+        if (!dateString) return '';
         try {
-            const localDate = new Date(new Date(order.pickup_datetime).getTime() - (new Date().getTimezoneOffset() * 60000));
-            pickupInput.value = localDate.toISOString().slice(0, 16);
-        } catch (e) { pickupInput.value = ''; }
-    } else {
-        pickupInput.value = '';
-    }
+            const date = new Date(dateString);
+            // Corrige o fuso horário para exibição local no input
+            const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+            return localDate.toISOString().slice(0, 16);
+        } catch (e) { return ''; }
+    };
+    
+    pickupInput.value = toInputFormat(order.pickup_datetime);
+    completedInput.value = toInputFormat(order.completed_at);
+    paidInput.value = toInputFormat(order.paid_at);
     
     document.querySelectorAll('#execution-status-options .option-button').forEach(btn => {
-        btn.classList.toggle('selected', btn.dataset.status === order.execution_status);
+        const isSelected = btn.dataset.status === order.execution_status;
+        btn.classList.toggle('selected', isSelected);
+        btn.classList.remove('status-green-light', 'status-green-dark');
+        if (isSelected) {
+            if (['AGUARDANDO_RETIRADA', 'AGUARDANDO_ENTREGA'].includes(order.execution_status)) {
+                btn.classList.add('status-green-light');
+            } else if (order.execution_status === 'CONCLUIDO') {
+                btn.classList.add('status-green-dark');
+            }
+        }
     });
 
     document.querySelectorAll('#payment-status-options .option-button').forEach(btn => {
-        btn.classList.toggle('selected', btn.dataset.status === order.payment_status);
+        const isSelected = btn.dataset.status === order.payment_status;
+        btn.classList.toggle('selected', isSelected);
+        btn.classList.remove('status-green-light');
+        if (isSelected && order.payment_status === 'PAGO') {
+            btn.classList.add('status-green-light');
+        }
     });
 }
 
+/**
+ * Atualiza as informações do cliente na tela.
+ * @param {object|null} customer - O objeto do cliente ou null para limpar.
+ * @param {object} balance - O objeto de saldo do cliente.
+ */
 export function renderCustomerInfo(customer, balance) {
-    const btn = document.getElementById('view-customer-orders-btn');
+    // CORREÇÃO: A lógica que usava a variável 'order' foi removida desta função.
     if (customer) {
         elements.customerNameDisplay.textContent = customer.name;
         elements.cardCustomerName.textContent = customer.name;
         elements.cardCustomerBalance.textContent = `Saldo: ${formatCurrency(balance.totalBalance)}`;
-        btn.disabled = false;
+        elements.viewCustomerOrdersBtn.disabled = false;
     } else {
         elements.customerNameDisplay.textContent = 'Nenhum';
         elements.cardCustomerName.textContent = 'Selecione um cliente';
         elements.cardCustomerBalance.textContent = 'Saldo: R$ 0,00';
-        btn.disabled = true;
+        elements.viewCustomerOrdersBtn.disabled = true;
     }
 }
 
-// --- FUNÇÃO QUE FALTAVA ---
-/**
- * Renderiza as sugestões de busca de cliente.
- * @param {object[]} customers - Array de clientes.
- * @param {Function} onSelect - Callback ao selecionar um cliente.
- */
 export function renderCustomerSuggestions(customers, onSelect) {
     elements.customerSuggestions.innerHTML = '';
     elements.customerSuggestions.classList.toggle('hidden', customers.length === 0);
@@ -190,8 +214,6 @@ export function renderCustomerSuggestions(customers, onSelect) {
         elements.customerSuggestions.appendChild(div);
     });
 }
-// -------------------------
-
 export const clearCustomerSuggestions = () => elements.customerSuggestions.classList.add('hidden');
 
 export function renderOrderSuggestions(orders, onSelect) {
@@ -217,9 +239,8 @@ export function renderCustomerOrdersModal(customer, orders, onSelect) {
     document.getElementById('modal-customer-name').textContent = customer.name;
     const tbody = document.getElementById('customer-orders-tbody');
     tbody.innerHTML = '';
-
     if (orders.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5">Nenhum pedido encontrado para este cliente.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5">Nenhum pedido encontrado.</td></tr>';
     } else {
         orders.forEach(order => {
             const row = document.createElement('tr');
@@ -244,7 +265,9 @@ export function resetOrderView(clearCustomer = true) {
     renderOrderItems([]);
     updateSummaryFooter({});
     document.getElementById('pickup-datetime-input').value = '';
-    document.querySelectorAll('.option-button').forEach(btn => btn.classList.remove('selected'));
+    document.getElementById('completed-at-input').value = '';
+    document.getElementById('paid-at-input').value = '';
+    document.querySelectorAll('.option-button').forEach(btn => btn.classList.remove('selected', 'status-green-light', 'status-green-dark'));
     
     if (clearCustomer) {
         renderCustomerInfo(null, { totalBalance: 0 });

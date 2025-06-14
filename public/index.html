@@ -77,16 +77,26 @@
             
             <h4>Status do Serviço</h4>
             <div id="execution-status-options" class="options-group">
-                <button class="option-button" data-status="AGUARDANDO_EXECUCAO">AG. EXECUÇÃO</button>
                 <button class="option-button" data-status="EM_EXECUCAO">EM EXECUÇÃO</button>
+                <button class="option-button" data-status="AGUARDANDO_RETIRADA">AG. RETIRADA</button>
+                <button class="option-button" data-status="AGUARDANDO_ENTREGA">AG. ENTREGA</button>
                 <button class="option-button" data-status="CONCLUIDO">CONCLUÍDO</button>
-                <button class="option-button" data-status="ENTREGUE">ENTREGUE</button>
+            </div>
+
+            <div class="form-group">
+                <label for="completed-at-input">Data de Conclusão:</label>
+                <input type="datetime-local" id="completed-at-input" class="form-control">
             </div>
             
             <h4>Status do Pagamento</h4>
             <div id="payment-status-options" class="options-group">
                 <button class="option-button" data-status="AGUARDANDO_PAGAMENTO">AG. PAGAMENTO</button>
                 <button class="option-button" data-status="PAGO">PAGO</button>
+            </div>
+
+            <div class="form-group">
+                <label for="paid-at-input">Data de Pagamento:</label>
+                <input type="datetime-local" id="paid-at-input" class="form-control">
             </div>
 
             <div class="main-actions">

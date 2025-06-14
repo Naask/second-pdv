@@ -247,6 +247,18 @@ body {
 .action-btn.pay:disabled { background-color: #ccc; cursor: not-allowed; }
 .action-btn.new { background-color: var(--text-light); color: var(--text-dark); border: 1px solid var(--border-color); }
 
+.option-button.selected.status-green-light {
+    background-color: #90ee90; /* Verde claro */
+    color: var(--text-dark);
+    border-color: #80d880;
+}
+
+.option-button.selected.status-green-dark {
+    background-color: var(--success-accent); /* Verde escuro (padrão de sucesso) */
+    color: var(--text-light);
+    border-color: var(--success-accent);
+}
+
 /* --- Rodapé --- */
 .summary-footer {
     position: fixed;

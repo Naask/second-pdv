@@ -1,4 +1,3 @@
-// public/js/main.js
 import * as api from './api.js';
 import * as ui from './ui.js';
 
@@ -14,9 +13,7 @@ const state = {
 function generateShortId() {
     const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let id = '';
-    for (let i = 0; i < 8; i++) {
-        id += alphabet.charAt(Math.floor(Math.random() * alphabet.length));
-    }
+    for (let i = 0; i < 8; i++) id += alphabet.charAt(Math.floor(Math.random() * alphabet.length));
     return id;
 }
 
@@ -29,12 +26,7 @@ function resetApplication() {
 
 function recalculateOrderTotals() {
     if (!state.currentOrder) return;
-    let totalAmount = 0;
-    state.currentOrder.items.forEach(item => {
-        item.total_price = Math.round((item.unit_price || 0) * (item.quantity || 0));
-        totalAmount += item.total_price;
-    });
-    state.currentOrder.total_amount = totalAmount;
+    state.currentOrder.total_amount = state.currentOrder.items.reduce((sum, item) => sum + Math.round((item.unit_price || 0) * (item.quantity || 0)), 0);
 }
 
 async function loadOrder(orderId) {
@@ -79,14 +71,16 @@ async function selectCustomer(customerId) {
 
 function createNewOrderInMemory() {
     if (!state.currentCustomer) return ui.showMessage('Selecione um cliente para iniciar um novo pedido.', 'error');
-    
     state.currentOrder = {
-        order_id: generateShortId(),
+        isNew: true,
+        order_id: '#NOVO',
         customer_id: state.currentCustomer.customer_id,
         items: [],
         execution_status: 'AGUARDANDO_EXECUCAO',
         payment_status: 'AGUARDANDO_PAGAMENTO',
         pickup_datetime: '',
+        completed_at: null,
+        paid_at: null,
         total_amount: 0,
     };
     ui.renderOrder(state.currentOrder, handleRemoveItemFromOrder, handleQuantityChange);
@@ -128,17 +122,31 @@ function handleQuantityChange(orderItemId, newQuantity) {
 
 function handleStatusChange(type, newStatus) {
     if (!state.currentOrder) return;
-    if (type === 'execution') state.currentOrder.execution_status = newStatus;
-    if (type === 'payment') state.currentOrder.payment_status = newStatus;
+    const now_as_string = new Date(Date.now() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+    if (type === 'execution') {
+        state.currentOrder.execution_status = newStatus;
+        if (newStatus === 'CONCLUIDO' && !document.getElementById('completed-at-input').value) {
+            state.currentOrder.completed_at = now_as_string;
+        }
+    }
+    if (type === 'payment') {
+        state.currentOrder.payment_status = newStatus;
+        if (newStatus === 'PAGO' && !document.getElementById('paid-at-input').value) {
+            state.currentOrder.paid_at = now_as_string;
+        }
+    }
     ui.renderOrder(state.currentOrder, handleRemoveItemFromOrder, handleQuantityChange);
 }
 
 async function handleSaveOrder() {
-    if (!state.currentOrder) {
-        if (state.currentCustomer) createNewOrderInMemory();
-        else return ui.showMessage('Nenhum cliente selecionado para salvar o pedido.', 'error');
+    if (!state.currentOrder) return ui.showMessage('Nenhum pedido ativo para salvar.', 'error');
+    if (state.currentOrder.isNew) {
+        state.currentOrder.order_id = generateShortId();
+        delete state.currentOrder.isNew;
     }
     state.currentOrder.pickup_datetime = document.getElementById('pickup-datetime-input').value || null;
+    state.currentOrder.completed_at = document.getElementById('completed-at-input').value || null;
+    state.currentOrder.paid_at = document.getElementById('paid-at-input').value || null;
     recalculateOrderTotals();
     ui.showLoading(true);
     try {
@@ -148,6 +156,7 @@ async function handleSaveOrder() {
         ui.showMessage(`Pedido #${savedOrder.order_id} salvo com sucesso!`, 'success');
     } catch (error) {
         ui.showMessage(error.message, 'error');
+        if (!state.currentOrder.created_at) state.currentOrder.isNew = true;
     } finally {
         ui.showLoading(false);
     }
@@ -169,37 +178,48 @@ async function handleViewCustomerOrders() {
     }
 }
 
+async function handleNewCustomerSubmit(event) {
+    event.preventDefault();
+    const customerData = ui.getNewCustomerFormData();
+    if (!customerData.name) return ui.showMessage('O campo "Nome" é obrigatório.', 'error');
+    ui.showLoading(true);
+    try {
+        const newCustomer = await api.createCustomer(customerData);
+        ui.toggleModal('new-customer-modal', false);
+        ui.clearForm(event.target);
+        ui.showMessage(`Cliente "${newCustomer.name}" criado com sucesso!`, 'success');
+        selectCustomer(newCustomer.customer_id);
+    } catch (err) {
+        ui.showMessage(err.message, 'error');
+    } finally {
+        ui.showLoading(false);
+    }
+}
+
 async function init() {
     console.log("Inicializando PDV...");
     
-    const customerSearchInput = document.getElementById('customer-search-input');
-    const orderSearchInput = document.getElementById('order-search-input');
-
-    // Listener para busca de CLIENTES
-    customerSearchInput.addEventListener('input', (e) => {
+    document.getElementById('customer-search-input').addEventListener('input', (e) => {
         clearTimeout(state.debounceTimer);
-        // Usamos setTimeout (debouncing) para não fazer uma chamada API a cada tecla digitada
-        state.debounceTimer = setTimeout(async () => {
+        setTimeout(async () => {
             const searchTerm = e.target.value;
             if (searchTerm.length > 1) {
                 try {
                     const customers = await api.searchCustomers(searchTerm);
                     ui.renderCustomerSuggestions(customers, selectCustomer);
-                } catch (error) {
-                    ui.showMessage(error.message, 'error');
-                }
+                } catch (error) { ui.showMessage(error.message, 'error'); }
             } else {
                 ui.clearCustomerSuggestions();
             }
         }, 300);
     });
 
-    // Listener para busca de PEDIDOS
+    const orderSearchInput = document.getElementById('order-search-input');
     orderSearchInput.addEventListener('input', (e) => {
         clearTimeout(state.debounceTimer);
         const searchTerm = e.target.value.trim().toUpperCase();
         if (searchTerm.length === 0) return ui.clearOrderSuggestions();
-        state.debounceTimer = setTimeout(async () => {
+        setTimeout(async () => {
             try {
                 const orders = await api.searchOrders(searchTerm);
                 ui.renderOrderSuggestions(orders, (selectedOrderId) => {
@@ -209,7 +229,6 @@ async function init() {
             } catch (error) { ui.showMessage(error.message, 'error'); }
         }, 300);
     });
-
     orderSearchInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -218,13 +237,12 @@ async function init() {
         }
     });
 
-    // Listeners para os botões principais
     document.getElementById('new-order-btn').addEventListener('click', createNewOrderInMemory);
     document.getElementById('save-order-btn').addEventListener('click', handleSaveOrder);
     document.getElementById('view-customer-orders-btn').addEventListener('click', handleViewCustomerOrders);
     
-    // Listeners para os modais e status
     document.getElementById('new-customer-btn').addEventListener('click', () => ui.toggleModal('new-customer-modal', true));
+    document.getElementById('new-customer-form').addEventListener('submit', handleNewCustomerSubmit);
     document.getElementById('new-customer-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('new-customer-modal', false));
     document.getElementById('customer-orders-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('customer-orders-modal', false));
     
@@ -235,7 +253,6 @@ async function init() {
         if (e.target.classList.contains('option-button')) handleStatusChange('payment', e.target.dataset.status);
     });
 
-    // Carregamento de Dados Iniciais
     ui.showLoading(true);
     try {
         const initialData = await api.getInitialData();
