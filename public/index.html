@@ -8,70 +8,47 @@
     <script src="js/main.js" type="module" defer></script>
 </head>
 <body>
-    <div id="loading-overlay" class="hidden">
-        <div class="spinner"></div>
-    </div>
+    <div id="loading-overlay" class="hidden"><div class="spinner"></div></div>
     <div id="message-container"></div>
-
     <header class="main-header">
         <div class="order-info">
             <span id="order-id-display">Pedido #NOVO</span>
-            <div class="search-container">
-                <input type="text" id="order-search-input" class="header-input" placeholder="Buscar Pedido...">
-                <div id="order-suggestions" class="suggestions hidden"></div>
-            </div>
+            <div class="search-container"><input type="text" id="order-search-input" class="header-input" placeholder="Buscar Pedido..."><div id="order-suggestions" class="suggestions hidden"></div></div>
         </div>
         <div class="client-actions">
             <span>Cliente:</span>
-            <div class="search-container">
-                <input type="text" id="customer-search-input" placeholder="Buscar Cliente...">
-                <div id="customer-suggestions" class="suggestions hidden"></div>
-            </div>
+            <div class="search-container"><input type="text" id="customer-search-input" placeholder="Buscar Cliente..."><div id="customer-suggestions" class="suggestions hidden"></div></div>
             <span id="customer-name-display">Nenhum</span>
-            <button id="new-customer-btn" class="header-btn">Novo Cliente</button>
-            <button id="edit-customer-btn" class="header-btn" disabled>Editar Cliente</button>
+            <button id="new-customer-btn" class="header-btn">Novo</button>
+            <button id="edit-customer-btn" class="header-btn" disabled>Editar</button>
         </div>
     </header>
-
     <main class="main-content">
         <section id="product-selection-pane" class="panel">
             <div id="category-panel" class="panel-section"></div>
             <div id="product-list" class="panel-section scrollable"></div>
         </section>
-
         <section id="order-pane" class="panel">
             <div class="order-items-header"><h3>Itens do Pedido</h3></div>
             <div id="order-items-container" class="panel-section scrollable">
                 <table id="order-items-table">
-                    <thead>
-                        <tr>
-                            <th>Qtd.</th>
-                            <th>Produto</th>
-                            <th>V. Un.</th>
-                            <th>Subtotal</th>
-                            <th></th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>Qtd.</th><th>Produto</th><th>V. Un.</th><th>Subtotal</th><th></th></tr></thead>
                     <tbody id="order-items-tbody"></tbody>
                 </table>
             </div>
         </section>
-
         <aside id="actions-pane" class="panel">
             <h4>Cliente Selecionado</h4>
             <div id="customer-details-card">
-                <strong id="card-customer-name">Selecione um cliente</strong>
-                <p id="card-customer-balance">Saldo: R$ 0,00</p>
+                <strong id="card-customer-name">Selecione um cliente</strong><p id="card-customer-balance">Saldo: R$ 0,00</p>
             </div>
-            <button id="view-customer-orders-btn" class="action-btn-secondary" disabled>Ver Pedidos do Cliente</button>
+            <button id="view-customer-orders-btn" class="action-btn-secondary" disabled>Ver Pedidos</button>
             <div class="customer-actions">
                 <button id="add-credit-btn" class="action-btn-secondary" disabled>Adicionar Crédito</button>
                 <button id="add-package-btn" class="action-btn-secondary" disabled>Comprar Pacote</button>
             </div>
-            <div class="form-group">
-                <label for="pickup-datetime-input">Pronto para Retirada em:</label>
-                <input type="datetime-local" id="pickup-datetime-input" class="form-control">
-            </div>
+            <div class="form-group"><label for="pickup-datetime-input">Pronto para Retirada:</label><input type="datetime-local" id="pickup-datetime-input" class="form-control"></div>
+            
             <h4>Status do Serviço</h4>
             <div id="execution-status-options" class="options-group">
                 <button class="option-button" data-status="EM_EXECUCAO">EM EXECUÇÃO</button>
@@ -79,38 +56,38 @@
                 <button class="option-button" data-status="AGUARDANDO_ENTREGA">AG. ENTREGA</button>
                 <button class="option-button" data-status="CONCLUIDO">CONCLUÍDO</button>
             </div>
-            <h4>Status do Pagamento</h4>
-            <div id="payment-status-options" class="options-group">
-                <button class="option-button" data-status="AGUARDANDO_PAGAMENTO">AG. PAGAMENTO</button>
-                <button class="option-button" data-status="PAGO">PAGO</button>
+            
+            <div class="form-group"><label for="completed-at-input">Data de Conclusão:</label><input type="datetime-local" id="completed-at-input" class="form-control"></div>
+            
+            <h4>Pagamento</h4>
+            <div id="payment-info-display" class="payment-info">
+                <span>Status: <strong id="payment-status-display">AGUARDANDO</strong></span>
             </div>
-            <div class="form-group">
-                <label for="completed-at-input">Data de Conclusão:</label>
-                <input type="datetime-local" id="completed-at-input" class="form-control">
+            <div id="payment-breakdown" class="payment-breakdown">
+                 <p>Total do Pedido: <strong id="payment-total-due">R$ 0,00</strong></p>
+                 <p>Pagamentos Aplicados: <strong id="payment-applied">R$ 0,00</strong></p>
+                 <p class="payment-due">Restante a Pagar: <strong id="payment-remaining">R$ 0,00</strong></p>
             </div>
-            <div class="form-group">
-                <label for="paid-at-input">Data de Pagamento:</label>
-                <input type="datetime-local" id="paid-at-input" class="form-control">
+            <div id="payment-methods" class="options-group">
+                <button class="option-button" data-method="Saldo">Usar Saldo</button>
+                <button class="option-button" data-method="Dinheiro">Dinheiro</button>
+                <button class="option-button" data-method="Pix">Pix</button>
+                <button class="option-button" data-method="Débito">Débito</button>
+                <button class="option-button" data-method="Crédito">Crédito</button>
             </div>
+            <ul id="staged-payments-list"></ul>
+
+            <div class="form-group"><label for="paid-at-input">Data de Pagamento:</label><input type="datetime-local" id="paid-at-input" class="form-control"></div>
+            
             <div class="main-actions">
                 <button id="save-order-btn" class="action-btn save">💾 Salvar Pedido</button>
                 <button id="new-order-btn" class="action-btn new">✨ Limpar Tela</button>
             </div>
         </aside>
     </main>
+    <footer class="summary-footer"><span id="footer-item-count">ITENS: 0</span><span id="footer-subtotal">SUBTOTAL: R$ 0,00</span><span id="footer-total">TOTAL: R$ 0,00</span></footer>
+    <template id="product-card-template"><div class="product-card"><span class="product-name"></span><span class="product-price"></span></div></template>
     
-    <footer class="summary-footer">
-        <span id="footer-item-count">ITENS: 0</span>
-        <span id="footer-subtotal">SUBTOTAL: R$ 0,00</span>
-        <span id="footer-total">TOTAL: R$ 0,00</span>
-    </footer>
-
-    <template id="product-card-template">
-        <div class="product-card">
-            <span class="product-name"></span>
-            <span class="product-price"></span>
-        </div>
-    </template>
     <div id="new-customer-modal" class="modal hidden">
         <div class="modal-content">
             <span class="close-button">&times;</span>
@@ -130,11 +107,7 @@
             <h2>Pedidos de <span id="modal-customer-name"></span></h2>
             <div class="table-container">
                 <table id="customer-orders-table">
-                    <thead>
-                        <tr>
-                            <th>Pedido #</th><th>Data</th><th>Status Serviço</th><th>Status Pagto.</th><th>Valor Total</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>Pedido #</th><th>Data</th><th>Status Serviço</th><th>Status Pagto.</th><th>Valor Total</th></tr></thead>
                     <tbody id="customer-orders-tbody"></tbody>
                 </table>
             </div>

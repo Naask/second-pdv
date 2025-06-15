@@ -4,20 +4,24 @@ const {
     handleSaveOrder,
     handleGetOrderDetails,
     handleSearchOrders,
+    handleProcessPayment,
+    handleGetCustomerOrders, // Adicionado para consistência, embora chamado via customerRoutes
 } = require('../controllers/orderController');
 
 const router = express.Router();
 
-// Rota principal para salvar (criar ou atualizar) um pedido
-// POST /api/v1/orders/save
+// Rota para salvar (criar ou atualizar) um pedido
 router.post('/save', handleSaveOrder);
 
 // Rota para buscar pedidos por ID parcial
-// GET /api/v1/orders/search?id=...
 router.get('/search', handleSearchOrders);
 
 // Rota para obter detalhes de um pedido específico
-// GET /api/v1/orders/:orderId
 router.get('/:orderId', handleGetOrderDetails);
+
+// Rota para processar um pagamento (era usada no fluxo de pagamento anterior, pode ser removida se não usada)
+// Mantendo por consistência, caso queiramos um botão de pagamento direto no futuro.
+// A lógica de pagamento principal agora está no saveOrder.
+// router.post('/:orderId/pay', handleProcessPayment); 
 
 module.exports = router;

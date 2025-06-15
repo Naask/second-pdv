@@ -18,31 +18,15 @@ async function fetchJSON(endpoint, options = {}) {
     }
 }
 
-// --- Funções da API ---
-
 export const getInitialData = () => fetchJSON('/products/initial-data');
 export const searchCustomers = (name) => fetchJSON(`/customers/search?name=${encodeURIComponent(name)}`);
 export const getCustomerDetails = (customerId) => fetchJSON(`/customers/${customerId}/details`);
 export const createCustomer = (customerData) => fetchJSON('/customers', { method: 'POST', body: JSON.stringify(customerData) });
-export const getOrdersByCustomer = (customerId) => fetchJSON(`/customers/${customerId}/orders`);
-
-export const updateCustomer = (customerId, customerData) => fetchJSON(`/customers/${customerId}`, {
-    method: 'PATCH',
-    body: JSON.stringify(customerData),
-});
-
-export const addCredit = (customerId, data) => fetchJSON(`/customers/${customerId}/credits`, { method: 'POST', body: JSON.stringify(data) });
-export const addPrepaidPackage = (customerId, data) => fetchJSON(`/customers/${customerId}/packages`, { method: 'POST', body: JSON.stringify(data) });
-
-
-// --- Funções de Pedido Simplificadas ---
+export const updateCustomer = (customerId, customerData) => fetchJSON(`/customers/${customerId}`, { method: 'PATCH', body: JSON.stringify(customerData) });
 export const getOrderDetails = (orderId) => fetchJSON(`/orders/${orderId}`);
 export const searchOrders = (partialId) => fetchJSON(`/orders/search?id=${encodeURIComponent(partialId)}`);
-
-/**
- * Envia o estado completo de um pedido para ser salvo no backend.
- */
-export const saveOrder = (orderData) => fetchJSON('/orders/save', {
-    method: 'POST',
-    body: JSON.stringify(orderData),
-});
+export const getOrdersByCustomer = (customerId) => fetchJSON(`/customers/${customerId}/orders`);
+export const saveOrder = (orderData) => fetchJSON('/orders/save', { method: 'POST', body: JSON.stringify(orderData) });
+export const addCredit = (customerId, data) => fetchJSON(`/customers/${customerId}/credits`, { method: 'POST', body: JSON.stringify(data) });
+export const addPrepaidPackage = (customerId, data) => fetchJSON(`/customers/${customerId}/packages`, { method: 'POST', body: JSON.stringify(data) });
+export const processPayment = (orderId, paymentData) => fetchJSON(`/orders/${orderId}/pay`, { method: 'POST', body: JSON.stringify(paymentData) });
