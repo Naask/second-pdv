@@ -223,6 +223,63 @@ body {
     color: var(--text-light);
     border-color: var(--header-bg);
 }
+/* --- NOVOS ESTILOS PARA PAGAMENTO --- */
+.payment-info {
+    font-size: 0.9rem;
+    padding: 5px 0;
+}
+.payment-info strong {
+    font-weight: bold;
+}
+.payment-breakdown {
+    background-color: var(--body-bg);
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+.payment-breakdown p {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+.payment-breakdown .payment-due {
+    font-weight: bold;
+    color: var(--danger-accent);
+    border-top: 1px solid var(--border-color);
+    padding-top: 5px;
+    margin-top: 5px;
+}
+
+#payment-methods {
+    grid-template-columns: repeat(3, 1fr); /* 3 colunas */
+}
+#payment-methods .option-button {
+    font-size: 0.8rem;
+}
+
+#staged-payments-list {
+    list-style: none;
+    padding: 0;
+    margin: 5px 0;
+    font-size: 0.9rem;
+}
+#staged-payments-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px;
+    background-color: #f1f1f1;
+    border-radius: 3px;
+    margin-bottom: 5px;
+}
+#staged-payments-list button {
+    background: none;
+    border: none;
+    color: var(--danger-accent);
+    cursor: pointer;
+    font-weight: bold;
+}
+/* --- FIM DOS NOVOS ESTILOS --- */
 .main-actions {
     margin-top: auto; /* Empurra para o final */
     display: flex;

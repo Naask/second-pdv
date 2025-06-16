@@ -9,7 +9,12 @@ function getCustomerBalance(customerId) {
     for (const t of transactions) {
         switch (t.transaction_type) {
             case 'PAYMENT_RECEIVED': mainBalance += t.amount; break;
-            case 'SALE': mainBalance -= t.amount; break;
+            case 'SALE':
+                 const saleAmount = t.amount;
+                 const bonusUsed = Math.min(bonusBalance, saleAmount);
+                 bonusBalance -= bonusUsed;
+                 mainBalance -= (saleAmount - bonusUsed);
+                 break;
             case 'BONUS_ADDED': bonusBalance += t.amount; break;
         }
     }
@@ -20,6 +25,20 @@ function recordTransaction({ customerId, type, amount, description, metadata = {
     const sql = `INSERT INTO ledger_transactions (transaction_id, customer_id, transaction_type, description, amount, metadata) VALUES (?, ?, ?, ?, ?, ?)`;
     db.prepare(sql).run(crypto.randomUUID(), customerId, type, description, amount, JSON.stringify(metadata));
     return { success: true };
+}
+
+function applySaleTransaction(customerId, orderId, amountToPay) {
+    const balance = getCustomerBalance(customerId);
+    if (balance.totalBalance < amountToPay) {
+        throw new Error("Saldo insuficiente para cobrir o pagamento.");
+    }
+    return recordTransaction({
+        customerId,
+        type: 'SALE',
+        amount: amountToPay,
+        description: `Pagamento do Pedido #${orderId}`,
+        metadata: { orderId }
+    });
 }
 
 const addPrepaidPackage = db.transaction(({ customerId, paidAmount, bonusAmount }) => {
@@ -40,4 +59,5 @@ module.exports = {
     getCustomerBalance,
     recordTransaction,
     addPrepaidPackage,
+    applySaleTransaction,
 };

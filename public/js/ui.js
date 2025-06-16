@@ -19,17 +19,23 @@ const elements = {
     footerTotal: document.getElementById('footer-total'),
     newCustomerModal: document.getElementById('new-customer-modal'),
     newCustomerForm: document.getElementById('new-customer-form'),
-    editCustomerBtn: document.getElementById('edit-customer-btn'),
-    viewCustomerOrdersBtn: document.getElementById('view-customer-orders-btn'),
-    addCreditBtn: document.getElementById('add-credit-btn'), // Novo
-    addPackageBtn: document.getElementById('add-package-btn'), // Novo
-
+    addCreditBtn: document.getElementById('add-credit-btn'),
+    addPackageBtn: document.getElementById('add-package-btn'),
+    // Elementos de pagamento
+    paymentStatusDisplay: document.getElementById('payment-status-display'),
+    paymentTotalDue: document.getElementById('payment-total-due'),
+    paymentApplied: document.getElementById('payment-applied'),
+    paymentRemaining: document.getElementById('payment-remaining'),
+    paymentMethods: document.getElementById('payment-methods'),
+    stagedPaymentsList: document.getElementById('staged-payments-list'),
+    paidAtInput: document.getElementById('paid-at-input'),
+    executionStatusOptions: document.getElementById('execution-status-options'),
 };
 
 export const formatCurrency = (amountInCents) => (amountInCents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 export const showLoading = (isLoading) => elements.loadingOverlay.classList.toggle('hidden', !isLoading);
 export const toggleModal = (modalId, show) => document.getElementById(modalId).classList.toggle('hidden', !show);
-export const clearForm = (formElement) => formElement.reset();
+export const getISODateString = (date = new Date()) => new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
 
 export function showMessage(message, type = 'success') {
     const messageDiv = document.createElement('div');
@@ -86,56 +92,109 @@ export function filterProducts(category) {
     });
 }
 
+/**
+ * Renderiza as linhas da tabela de itens do pedido.
+ * Esta função limpa a tabela e a reconstrói do zero com base nos dados atuais.
+ */
 function renderOrderItems(items, onRemove, onQuantityChange) {
-    elements.orderItemsTbody.innerHTML = '';
+    elements.orderItemsTbody.innerHTML = ''; // Limpa a tabela antes de redesenhar
+
     if (!items || items.length === 0) {
         elements.orderItemsTbody.innerHTML = '<tr><td colspan="5">Adicione produtos ao pedido.</td></tr>';
         return;
     }
+
     items.forEach(item => {
         const row = document.createElement('tr');
+        // Usa um ID temporário se o item for novo, ou o ID do banco se já foi salvo
+        const itemId = item.order_item_id || item.temp_id;
+        
+        // **PONTO-CHAVE DA CORREÇÃO**
+        // O subtotal da linha é calculado aqui, usando a quantidade mais recente do item
         const itemTotalPrice = (item.unit_price || 0) * (item.quantity || 0);
+
         row.innerHTML = `
-            <td><input type="number" class="quantity-input" value="${item.quantity}" data-item-id="${item.order_item_id}" min="0.1" step="${item.unit_of_measure === 'KG' ? '0.1' : '1'}"></td>
+            <td><input type="number" class="quantity-input" value="${item.quantity}" data-item-id="${itemId}" min="0.1" step="${item.unit_of_measure === 'KG' ? '0.1' : '1'}"></td>
             <td>${item.product_name}</td>
             <td>${formatCurrency(item.unit_price)}</td>
             <td>${formatCurrency(itemTotalPrice)}</td>
-            <td><button class="remove-item-btn" data-item-id="${item.order_item_id}">&times;</button></td>
+            <td><button class="remove-item-btn" data-item-id="${itemId}">&times;</button></td>
         `;
+
+        // Adiciona os listeners para os botões e inputs da nova linha
         row.querySelector('.remove-item-btn').addEventListener('click', (e) => onRemove(e.target.dataset.itemId));
-        row.querySelector('.quantity-input').addEventListener('change', (e) => onQuantityChange(e.target.dataset.itemId, parseFloat(e.target.value)));
+        row.querySelector('.quantity-input').addEventListener('change', (e) => {
+            const newQuantity = parseFloat(e.target.value);
+            onQuantityChange(e.target.dataset.itemId, newQuantity);
+        });
+
         elements.orderItemsTbody.appendChild(row);
     });
 }
 
 function updateSummaryFooter(order) {
     const itemCount = order?.items?.length || 0;
-    const totalAmount = order?.items?.reduce((sum, item) => sum + ((item.unit_price || 0) * (item.quantity || 0)), 0) || 0;
+    const totalAmount = order?.total_amount || 0;
     elements.footerItemCount.textContent = `ITENS: ${itemCount}`;
     elements.footerSubtotal.textContent = `SUBTOTAL: ${formatCurrency(totalAmount)}`;
     elements.footerTotal.textContent = `TOTAL: ${formatCurrency(totalAmount)}`;
 }
 
-export function renderOrder(order, onRemoveItem, onQuantityChange) {
+function renderPaymentDetails(order, balance) {
+    const totalAmount = order?.total_amount || 0;
+    const existingPayments = order?.payments || [];
+    const stagedPayments = order?.stagedPayments || [];
+
+    const totalPaid = existingPayments.reduce((sum, p) => sum + p.amount, 0);
+    const totalStaged = stagedPayments.reduce((sum, p) => sum + p.amount, 0);
+    const remaining = totalAmount - totalPaid - totalStaged;
+    const customerBalance = balance?.totalBalance || 0;
+
+    elements.paymentStatusDisplay.textContent = (order?.payment_status || 'AGUARDANDO').replace(/_/g, ' ');
+    elements.paymentTotalDue.textContent = formatCurrency(totalAmount);
+    elements.paymentApplied.textContent = formatCurrency(totalPaid + totalStaged);
+    elements.paymentRemaining.textContent = formatCurrency(remaining);
+
+    elements.paymentMethods.querySelectorAll('button').forEach(btn => {
+        const method = btn.dataset.method.toUpperCase();
+        if (method === 'SALDO') {
+            btn.disabled = remaining <= 0 || customerBalance <= 0;
+        } else {
+            btn.disabled = remaining <= 0;
+        }
+    });
+}
+
+function renderStagedPayments(payments, onRemove) {
+    elements.stagedPaymentsList.innerHTML = '';
+    payments.forEach(p => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <span>${p.method}: ${formatCurrency(p.amount)}</span>
+            <button data-payment-id="${p.id}">&times;</button>
+        `;
+        li.querySelector('button').addEventListener('click', (e) => onRemove(e.target.dataset.paymentId));
+        elements.stagedPaymentsList.appendChild(li);
+    });
+}
+
+export function renderOrder(order, balance, callbacks) {
     if (!order) {
         resetOrderView(false);
         return;
     }
     elements.orderIdDisplay.textContent = order.isNew ? 'Pedido #NOVO' : `Pedido #${order.order_id}`;
-    renderOrderItems(order.items, onRemoveItem, onQuantityChange);
+    
+    renderOrderItems(order.items, callbacks.onRemoveItem, callbacks.onQuantityChange);
     updateSummaryFooter(order);
-    const toInputFormat = (dateString) => {
-        if (!dateString) return '';
-        try {
-            const date = new Date(dateString);
-            const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
-            return localDate.toISOString().slice(0, 16);
-        } catch (e) { return ''; }
-    };
-    document.getElementById('pickup-datetime-input').value = toInputFormat(order.pickup_datetime);
-    document.getElementById('completed-at-input').value = toInputFormat(order.completed_at);
-    document.getElementById('paid-at-input').value = toInputFormat(order.paid_at);
-    document.querySelectorAll('#execution-status-options .option-button').forEach(btn => {
+    renderPaymentDetails(order, balance);
+    renderStagedPayments(order.stagedPayments || [], callbacks.onRemoveStagedPayment);
+
+    document.getElementById('pickup-datetime-input').value = order.pickup_datetime ? getISODateString(new Date(order.pickup_datetime)) : '';
+    document.getElementById('completed-at-input').value = order.completed_at ? getISODateString(new Date(order.completed_at)) : '';
+    elements.paidAtInput.value = order.paid_at ? getISODateString(new Date(order.paid_at)) : '';
+
+    elements.executionStatusOptions.querySelectorAll('.option-button').forEach(btn => {
         const isSelected = btn.dataset.status === order.execution_status;
         btn.classList.toggle('selected', isSelected);
         btn.classList.remove('status-green-light', 'status-green-dark');
@@ -143,12 +202,6 @@ export function renderOrder(order, onRemoveItem, onQuantityChange) {
             if (['AGUARDANDO_RETIRADA', 'AGUARDANDO_ENTREGA'].includes(order.execution_status)) btn.classList.add('status-green-light');
             else if (order.execution_status === 'CONCLUIDO') btn.classList.add('status-green-dark');
         }
-    });
-    document.querySelectorAll('#payment-status-options .option-button').forEach(btn => {
-        const isSelected = btn.dataset.status === order.payment_status;
-        btn.classList.toggle('selected', isSelected);
-        btn.classList.remove('status-green-light');
-        if (isSelected && order.payment_status === 'PAGO') btn.classList.add('status-green-light');
     });
 }
 
@@ -160,7 +213,7 @@ export function renderCustomerInfo(customer, balance) {
         elements.viewCustomerOrdersBtn.disabled = false;
         elements.editCustomerBtn.disabled = false;
         elements.addCreditBtn.disabled = false;
-        elements.addPackageBtn.disabled = false
+        elements.addPackageBtn.disabled = false;
     } else {
         elements.customerNameDisplay.textContent = 'Nenhum';
         elements.cardCustomerName.textContent = 'Selecione um cliente';
@@ -180,7 +233,6 @@ export function populateCustomerModal(customer) {
         form.querySelector('#new-name').value = customer.name;
         form.querySelector('#new-phone').value = customer.phone || '';
         form.querySelector('#new-email').value = customer.email || '';
-        // Supondo que você tenha um campo de endereço no modal
         const addressInput = form.querySelector('#new-address');
         if(addressInput) addressInput.value = customer.address || '';
     } else {
@@ -241,14 +293,18 @@ export function renderCustomerOrdersModal(customer, orders, onSelect) {
     toggleModal('customer-orders-modal', true);
 }
 
+// ÚNICA DEFINIÇÃO DA FUNÇÃO
 export function resetOrderView(clearCustomer = true) {
     elements.orderIdDisplay.textContent = 'Pedido #NOVO';
-    renderOrderItems([]);
-    updateSummaryFooter({});
+    renderOrderItems([], () => {}, () => {});
+    updateSummaryFooter({ items: [], total_amount: 0 });
+    renderPaymentDetails(null, { totalBalance: 0 });
+    renderStagedPayments([], () => {});
     document.getElementById('pickup-datetime-input').value = '';
     document.getElementById('completed-at-input').value = '';
-    document.getElementById('paid-at-input').value = '';
-    document.querySelectorAll('.option-button').forEach(btn => btn.classList.remove('selected', 'status-green-light', 'status-green-dark'));
+    elements.paidAtInput.value = '';
+    elements.executionStatusOptions.querySelectorAll('.option-button').forEach(btn => btn.classList.remove('selected', 'status-green-light', 'status-green-dark'));
+    
     if (clearCustomer) {
         renderCustomerInfo(null, { totalBalance: 0 });
         elements.customerSearchInput.value = '';
