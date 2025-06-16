@@ -196,6 +196,59 @@ function handleEditCustomerClick() {
     ui.toggleModal('new-customer-modal', true);
 }
 
+// NOVA FUNÇÃO: Manipula a submissão do formulário de crédito
+async function handleAddCreditSubmit(event) {
+    event.preventDefault();
+    if (!state.currentCustomer) return;
+
+    const form = event.target;
+    const amount = parseInt(form.querySelector('#credit-amount').value, 10);
+
+    if (isNaN(amount) || amount <= 0) {
+        return ui.showMessage('Por favor, insira um valor de crédito válido.', 'error');
+    }
+
+    ui.showLoading(true);
+    try {
+        await api.addCredit(state.currentCustomer.customer_id, { amount });
+        ui.showMessage('Crédito adicionado com sucesso!');
+        ui.toggleModal('add-credit-modal', false);
+        // Recarrega os dados do cliente para atualizar o saldo na tela
+        await selectCustomer(state.currentCustomer.customer_id);
+    } catch (error) {
+        ui.showMessage(error.message, 'error');
+    } finally {
+        ui.showLoading(false);
+    }
+}
+
+// NOVA FUNÇÃO: Manipula a submissão do formulário de pacote
+async function handleAddPackageSubmit(event) {
+    event.preventDefault();
+    if (!state.currentCustomer) return;
+
+    const form = event.target;
+    const paidAmount = parseInt(form.querySelector('#package-paid-amount').value, 10);
+    const bonusAmount = parseInt(form.querySelector('#package-bonus-amount').value, 10);
+
+    if (isNaN(paidAmount) || paidAmount <= 0 || isNaN(bonusAmount) || bonusAmount < 0) {
+        return ui.showMessage('Por favor, insira valores válidos para o pacote.', 'error');
+    }
+
+    ui.showLoading(true);
+    try {
+        await api.addPrepaidPackage(state.currentCustomer.customer_id, { paidAmount, bonusAmount });
+        ui.showMessage('Pacote comprado com sucesso!');
+        ui.toggleModal('add-package-modal', false);
+        await selectCustomer(state.currentCustomer.customer_id);
+    } catch (error) {
+        ui.showMessage(error.message, 'error');
+    } finally {
+        ui.showLoading(false);
+    }
+}
+
+
 async function init() {
     document.getElementById('customer-search-input').addEventListener('input', (e) => {
         clearTimeout(state.debounceTimer);
@@ -246,6 +299,32 @@ async function init() {
     document.getElementById('edit-customer-btn').addEventListener('click', handleEditCustomerClick);
     document.getElementById('new-customer-form').addEventListener('submit', handleCustomerSubmit);
     document.getElementById('new-customer-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('new-customer-modal', false));
+    
+      // --- ADICIONE OS NOVOS LISTENERS AQUI ---
+      document.getElementById('add-credit-btn').addEventListener('click', () => {
+        if (!state.currentCustomer) return;
+        document.getElementById('add-credit-form').reset();
+        ui.toggleModal('add-credit-modal', true);
+    });
+
+    document.getElementById('add-package-btn').addEventListener('click', () => {
+        if (!state.currentCustomer) return;
+        document.getElementById('add-package-form').reset();
+        ui.toggleModal('add-package-modal', true);
+    });
+
+    // Listeners para fechar os modais
+    document.getElementById('new-customer-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('new-customer-modal', false));
+    document.getElementById('customer-orders-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('customer-orders-modal', false));
+    document.getElementById('add-credit-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('add-credit-modal', false));
+    document.getElementById('add-package-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('add-package-modal', false));
+
+    // Listeners para submissão dos novos formulários
+    document.getElementById('add-credit-form').addEventListener('submit', handleAddCreditSubmit);
+    document.getElementById('add-package-form').addEventListener('submit', handleAddPackageSubmit);
+    // --- FIM DOS NOVOS LISTENERS ---
+    
+    
     document.getElementById('customer-orders-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('customer-orders-modal', false));
     document.getElementById('execution-status-options').addEventListener('click', (e) => {
         if (e.target.classList.contains('option-button')) handleStatusChange('execution', e.target.dataset.status);

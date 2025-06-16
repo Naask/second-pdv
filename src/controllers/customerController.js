@@ -1,6 +1,6 @@
 // src/controllers/customerController.js
 const customerService = require('../services/customerService'); // ÚNICA DEPENDÊNCIA DE SERVIÇO
-const { createCustomerSchema } = require('../utils/validationSchemas');
+const { createCustomerSchema, prepaidPackageSchema } = require('../utils/validationSchemas');
 
 async function handleSearchCustomers(req, res) {
     try {
@@ -24,10 +24,15 @@ async function handleGetCustomerDetails(req, res) {
 async function handleCreateCustomer(req, res) { /* ... (sem alterações) ... */ }
 async function handleUpdateCustomer(req, res) { /* ... (sem alterações) ... */ }
 
-// Handlers de crédito e pacote agora chamam o customerService
+// Handlers de crédito e pacote
 async function handleAddCredit(req, res) {
     try {
-        customerService.addCreditToCustomer(req.params.customerId, req.body);
+        // Validação simples para o crédito
+        const { amount } = req.body;
+        if (!amount || typeof amount !== 'number' || amount <= 0) {
+            return res.status(400).json({ message: 'O valor do crédito deve ser um número positivo.' });
+        }
+        await customerService.addCreditToCustomer(req.params.customerId, req.body);
         res.status(201).json({ message: 'Crédito adicionado com sucesso.' });
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -36,7 +41,13 @@ async function handleAddCredit(req, res) {
 
 async function handleAddPackage(req, res) {
     try {
-        customerService.addPackageToCustomer(req.params.customerId, req.body);
+        // Validação com Joi para o pacote
+        const { error, value } = prepaidPackageSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ message: error.details[0].message });
+        }
+
+        await customerService.addPackageToCustomer(req.params.customerId, value);
         res.status(201).json({ message: 'Pacote adicionado com sucesso.' });
     } catch (err) {
         res.status(500).json({ message: err.message });
