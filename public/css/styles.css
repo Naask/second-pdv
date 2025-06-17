@@ -162,6 +162,52 @@ body {
     top: 0;
 }
 
+/* Adicione estas duas regras ao seu arquivo CSS */
+
+.modal {
+    position: fixed;
+    z-index: 200; /* O fundo escuro fica nesta camada */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: #fff;
+    color: #333;
+    padding: 2rem;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px; /* Largura padrão para modais pequenos */
+    position: relative;
+    z-index: 201;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+/* Regra específica para modais maiores, como o de 'Ver Pedidos' */
+.modal-content.large {
+    max-width: 1000px; /* Aumenta a largura máxima para 800px */
+}
+
+/* Adicione esta regra para a tabela de pedidos do modal */
+
+#customer-orders-table {
+    width: 100%; /* Faz a tabela ocupar toda a largura disponível */
+    border-collapse: collapse; /* Garante que as bordas fiquem limpas */
+    margin-top: 1rem; /* Adiciona um espaço entre o título do modal e a tabela */
+}
+
+/* Opcional: Melhora o alinhamento do texto nas colunas */
+#customer-orders-table th, #customer-orders-table td {
+    text-align: left;
+    padding: 8px 12px;
+}
+
 .quantity-input {
     width: 60px;
     text-align: center;

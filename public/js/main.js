@@ -11,6 +11,19 @@ const state = {
     isEditingCustomer: false,
 };
 
+/**
+ * Centraliza a tarefa de renderizar o pedido atual na UI.
+ */
+function renderCurrentOrder() {
+    if (state.currentOrder) {
+        ui.renderOrder(state.currentOrder, state.currentBalance, {
+            onRemoveItem: handleRemoveItemFromOrder,
+            onQuantityChange: handleQuantityChange,
+            onRemoveStagedPayment: handleRemoveStagedPayment,
+        });
+    }
+}
+
 function generateShortId() {
     const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let id = '';
@@ -26,20 +39,18 @@ function resetApplication() {
     ui.resetOrderView(true);
 }
 
+/**
+ * Recalcula o valor total do pedido e chama a função para redesenhar a interface.
+ */
 function recalculateOrderTotals() {
     if (!state.currentOrder) return;
-    state.currentOrder.total_amount = state.currentOrder.items.reduce((sum, item) => sum + Math.round((item.unit_price || 0) * (item.quantity || 0)), 0);
-}
 
-function recalculateAndRender() {
-    if (!state.currentOrder) {
-        if(state.currentCustomer) {
-             ui.renderPaymentPane(null, state.currentBalance, handleRemoveStagedPayment);
-        }
-        return;
-    };
-    recalculateOrderTotals();
-    ui.renderOrder(state.currentOrder, handleRemoveItemFromOrder, handleQuantityChange, handleRemoveStagedPayment, state.currentBalance);
+    state.currentOrder.total_amount = state.currentOrder.items.reduce((sum, item) => {
+        const itemTotal = (item.unit_price || 0) * (item.quantity || 0);
+        return sum + Math.round(itemTotal);
+    }, 0);
+
+    renderCurrentOrder();
 }
 
 async function loadOrder(orderId) {
@@ -56,13 +67,14 @@ async function loadOrder(orderId) {
         state.currentBalance = customerDetails.balance;
         
         ui.renderCustomerInfo(state.currentCustomer, state.currentBalance);
-        recalculateAndRender();
+        renderCurrentOrder();
         ui.showMessage('Pedido carregado com sucesso!', 'success');
     } catch (error) {
         ui.showMessage(error.message, 'error');
     } finally {
         ui.showLoading(false);
         document.getElementById('order-search-input').value = '';
+        ui.clearOrderSuggestions();
     }
 }
 
@@ -85,20 +97,22 @@ async function selectCustomer(customerId) {
 
 function createNewOrderInMemory() {
     if (!state.currentCustomer) return ui.showMessage('Selecione um cliente para iniciar um novo pedido.', 'error');
+    
     state.currentOrder = {
         isNew: true,
         order_id: '#NOVO',
         customer_id: state.currentCustomer.customer_id,
         items: [],
+        payments: [],
+        stagedPayments: [],
         execution_status: 'EM_EXECUCAO',
         payment_status: 'AGUARDANDO_PAGAMENTO',
         pickup_datetime: '',
         completed_at: null,
         paid_at: null,
         total_amount: 0,
-        stagedPayments: [],
     };
-    recalculateAndRender();
+    renderCurrentOrder();
     ui.showMessage('Novo pedido iniciado. Adicione itens e salve.', 'success');
 }
 
@@ -131,77 +145,151 @@ async function handleCustomerSubmit(event) {
 function handleAddProductToOrder(product) {
     if (!state.currentCustomer) return ui.showMessage('Por favor, selecione um cliente primeiro.', 'error');
     if (!state.currentOrder) createNewOrderInMemory();
+
     state.currentOrder.items.push({
-        order_item_id: `temp_item_${Date.now()}`,
+        temp_id: `temp_${Date.now()}`,
         product_id: product.product_id,
         product_name: product.name,
         quantity: product.unit_of_measure === 'KG' ? 1.0 : 1,
         unit_price: product.price,
         unit_of_measure: product.unit_of_measure,
     });
-    recalculateAndRender();
+    recalculateOrderTotals();
 }
 
 function handleRemoveItemFromOrder(orderItemId) {
     if (!state.currentOrder) return;
-    state.currentOrder.items = state.currentOrder.items.filter(item => item.order_item_id != orderItemId);
-    recalculateAndRender();
+    state.currentOrder.items = state.currentOrder.items.filter(item => {
+        const idToCompare = item.order_item_id || item.temp_id;
+        return String(idToCompare) !== String(orderItemId);
+    });
+    recalculateOrderTotals();
 }
 
 function handleQuantityChange(orderItemId, newQuantity) {
-    if (!state.currentOrder || newQuantity < 0) return;
-    const item = state.currentOrder.items.find(i => i.order_item_id == orderItemId);
+    if (!state.currentOrder) return;
+    const newQty = parseFloat(newQuantity);
+    if (isNaN(newQty) || newQty < 0) return;
+
+    const item = state.currentOrder.items.find(i => {
+        const idToCompare = i.order_item_id || i.temp_id;
+        return String(idToCompare) === String(orderItemId);
+    });
+
     if (item) {
-        item.quantity = newQuantity;
-        recalculateAndRender();
+        item.quantity = newQty;
     }
+    recalculateOrderTotals();
 }
 
 function handleStatusChange(type, newStatus) {
     if (!state.currentOrder) return;
+
     if (type === 'execution') {
         state.currentOrder.execution_status = newStatus;
-        if (newStatus === 'CONCLUIDO' && !document.getElementById('completed-at-input').value) {
-            document.getElementById('completed-at-input').value = new Date(Date.now() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+        if (newStatus === 'CONCLUIDO' && !state.currentOrder.completed_at) {
+            state.currentOrder.completed_at = ui.getISODateString();
         }
     }
-    recalculateAndRender();
+    renderCurrentOrder();
 }
 
-function handlePaymentMethodClick(method) {
-    if (!state.currentOrder || !state.currentCustomer) return;
-    recalculateOrderTotals();
-    const total = state.currentOrder.total_amount;
-    const totalPaid = state.currentOrder.stagedPayments.reduce((sum, p) => sum + p.amount, 0);
-    const remaining = total - totalPaid;
-    if (remaining <= 0) return ui.showMessage('O valor do pedido já foi totalmente coberto.', 'info');
+/**
+ * NOVA FUNÇÃO
+ * Lida com o envio do formulário de adicionar crédito.
+ */
+async function handleAddCreditSubmit(event) {
+    event.preventDefault(); // Impede o recarregamento da página
+    if (!state.currentCustomer) return;
 
-    let amountToPay = 0;
-    if (method === 'Saldo') {
-        const balanceAvailable = state.currentBalance.totalBalance;
-        amountToPay = Math.min(remaining, balanceAvailable);
-    } else {
-        const input = prompt(`Valor a pagar com ${method} (em centavos):`, remaining);
-        if (input === null) return;
-        amountToPay = parseInt(input, 10);
-        if (isNaN(amountToPay) || amountToPay <= 0 || amountToPay > remaining) {
-            return ui.showMessage('Valor de pagamento inválido.', 'error');
-        }
+    const form = event.target;
+    const amount = parseInt(form.querySelector('#credit-amount').value, 10);
+
+    if (isNaN(amount) || amount <= 0) {
+        return ui.showMessage('Por favor, insira um valor de crédito válido em centavos.', 'error');
     }
-    if (amountToPay > 0) {
-        state.currentOrder.stagedPayments.push({ id: `pay_${Date.now()}`, method, amount: amountToPay });
-        const paidAtInput = document.getElementById('payment-date-input');
-        if (!paidAtInput.value) {
-            paidAtInput.value = new Date(Date.now() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
-        }
-        recalculateAndRender();
+
+    ui.showLoading(true);
+    try {
+        await api.addCredit(state.currentCustomer.customer_id, { amount, description: 'Crédito adicionado manualmente' });
+        ui.showMessage('Crédito adicionado com sucesso!');
+        ui.toggleModal('add-credit-modal', false);
+        // Recarrega os dados do cliente para atualizar o saldo na tela
+        await selectCustomer(state.currentCustomer.customer_id);
+    } catch (error) {
+        ui.showMessage(error.message, 'error');
+    } finally {
+        ui.showLoading(false);
     }
+}
+
+/**
+ * NOVA FUNÇÃO
+ * Lida com o envio do formulário de comprar pacote.
+ */
+async function handleAddPackageSubmit(event) {
+    event.preventDefault(); // Impede o recarregamento da página
+    if (!state.currentCustomer) return;
+
+    const form = event.target;
+    const paidAmount = parseInt(form.querySelector('#package-paid-amount').value, 10);
+    const bonusAmount = parseInt(form.querySelector('#package-bonus-amount').value, 10);
+
+    if (isNaN(paidAmount) || paidAmount <= 0 || isNaN(bonusAmount) || bonusAmount < 0) {
+        return ui.showMessage('Por favor, insira valores válidos para o pacote em centavos.', 'error');
+    }
+
+    ui.showLoading(true);
+    try {
+        await api.addPrepaidPackage(state.currentCustomer.customer_id, { paidAmount, bonusAmount });
+        ui.showMessage('Pacote comprado com sucesso!');
+        ui.toggleModal('add-package-modal', false);
+        // Recarrega os dados do cliente para atualizar o saldo na tela
+        await selectCustomer(state.currentCustomer.customer_id);
+    } catch (error) {
+        ui.showMessage(error.message, 'error');
+    } finally {
+        ui.showLoading(false);
+    }
+}
+
+function handleAddPayment(method) {
+    if (!state.currentOrder) return;
+
+    const { total_amount = 0, payments = [], stagedPayments = [] } = state.currentOrder;
+    const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+    const totalStaged = stagedPayments.reduce((sum, p) => sum + p.amount, 0);
+    const remaining = total_amount - totalPaid - totalStaged;
+
+    if (remaining <= 0) {
+        return ui.showMessage("O pedido já está totalmente pago.", "error");
+    }
+
+    let amountToPay = remaining;
+    if (method.toUpperCase() === 'SALDO') {
+        const customerBalance = state.currentBalance?.totalBalance || 0;
+        if (customerBalance <= 0) {
+            return ui.showMessage(`Cliente não possui saldo.`, 'error');
+        }
+        amountToPay = Math.min(customerBalance, remaining);
+    }
+    
+    stagedPayments.push({
+        id: `staged_${Date.now()}`,
+        method: method,
+        amount: amountToPay,
+    });
+    
+    if (!state.currentOrder.paid_at) {
+        state.currentOrder.paid_at = ui.getISODateString();
+    }
+    renderCurrentOrder();
 }
 
 function handleRemoveStagedPayment(paymentId) {
     if (!state.currentOrder) return;
     state.currentOrder.stagedPayments = state.currentOrder.stagedPayments.filter(p => p.id !== paymentId);
-    recalculateAndRender();
+    renderCurrentOrder();
 }
 
 async function handleSaveOrder() {
@@ -210,14 +298,26 @@ async function handleSaveOrder() {
         state.currentOrder.order_id = generateShortId();
         delete state.currentOrder.isNew;
     }
-    state.currentOrder.pickup_datetime = document.getElementById('pickup-datetime-input').value || null;
-    state.currentOrder.completed_at = document.getElementById('completed-at-input').value || null;
-    state.currentOrder.paid_at = document.getElementById('payment-date-input').value || null;
-    recalculateOrderTotals();
+
+    const finalPayments = [
+        ...(state.currentOrder.payments || []),
+        ...state.currentOrder.stagedPayments.map(p => ({
+            method: p.method,
+            amount: p.amount,
+            paid_at: state.currentOrder.paid_at || ui.getISODateString()
+        }))
+    ];
+
+    const orderPayload = {
+        ...state.currentOrder,
+        payments: finalPayments,
+    };
+    delete orderPayload.stagedPayments;
+    
     ui.showLoading(true);
     try {
-        const savedOrder = await api.saveOrder(state.currentOrder);
-        await loadOrder(savedOrder.order_id);
+        const savedOrder = await api.saveOrder(orderPayload);
+        await loadOrder(savedOrder.order_id); 
         ui.showMessage(`Pedido #${savedOrder.order_id} salvo com sucesso!`, 'success');
     } catch (error) {
         ui.showMessage(error.message, 'error');
@@ -253,9 +353,14 @@ function handleEditCustomerClick() {
     ui.toggleModal('new-customer-modal', true);
 }
 
+/**
+ * FUNÇÃO SUBSTITUÍDA
+ * Inicializa todos os listeners de eventos da aplicação.
+ */
 async function init() {
     console.log("Inicializando PDV...");
     
+    // Listener para busca de clientes
     document.getElementById('customer-search-input').addEventListener('input', (e) => {
         clearTimeout(state.debounceTimer);
         setTimeout(async () => {
@@ -271,6 +376,7 @@ async function init() {
         }, 300);
     });
 
+    // Listener para busca de pedidos
     const orderSearchInput = document.getElementById('order-search-input');
     orderSearchInput.addEventListener('input', (e) => {
         clearTimeout(state.debounceTimer);
@@ -294,28 +400,50 @@ async function init() {
         }
     });
 
-    document.getElementById('new-order-btn').addEventListener('click', createNewOrderInMemory);
+    // Listeners para botões de ação principais
+    document.getElementById('new-order-btn').addEventListener('click', resetApplication);
     document.getElementById('save-order-btn').addEventListener('click', handleSaveOrder);
     document.getElementById('view-customer-orders-btn').addEventListener('click', handleViewCustomerOrders);
     document.getElementById('edit-customer-btn').addEventListener('click', handleEditCustomerClick);
-    
     document.getElementById('new-customer-btn').addEventListener('click', () => {
         state.isEditingCustomer = false;
         ui.populateCustomerModal(null);
         ui.toggleModal('new-customer-modal', true);
     });
-    document.getElementById('new-customer-form').addEventListener('submit', handleCustomerSubmit);
     
+    // **LISTENERS CORRIGIDOS/ADICIONADOS**
+    // Adiciona listeners para os botões de crédito e pacote
+    document.getElementById('add-credit-btn').addEventListener('click', () => {
+        if (!state.currentCustomer) return;
+        document.getElementById('add-credit-form').reset();
+        ui.toggleModal('add-credit-modal', true);
+    });
+
+    document.getElementById('add-package-btn').addEventListener('click', () => {
+        if (!state.currentCustomer) return;
+        document.getElementById('add-package-form').reset();
+        ui.toggleModal('add-package-modal', true);
+    });
+
+    // Listeners para submissão de formulários
+    document.getElementById('new-customer-form').addEventListener('submit', handleCustomerSubmit);
+    document.getElementById('add-credit-form').addEventListener('submit', handleAddCreditSubmit);
+    document.getElementById('add-package-form').addEventListener('submit', handleAddPackageSubmit);
+    
+    // Listeners para fechar todos os modais
     document.getElementById('new-customer-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('new-customer-modal', false));
     document.getElementById('customer-orders-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('customer-orders-modal', false));
+    document.getElementById('add-credit-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('add-credit-modal', false));
+    document.getElementById('add-package-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('add-package-modal', false));
     
+    // Listeners para painel de ações do pedido
     document.getElementById('execution-status-options').addEventListener('click', (e) => {
         if (e.target.classList.contains('option-button')) handleStatusChange('execution', e.target.dataset.status);
     });
     
     document.getElementById('payment-methods').addEventListener('click', (e) => {
-        if (e.target.classList.contains('option-button')) {
-            handlePaymentMethodClick(e.target.dataset.method);
+        if (e.target.classList.contains('option-button') && !e.target.disabled) {
+            handleAddPayment(e.target.dataset.method);
         }
     });
     
@@ -325,6 +453,18 @@ async function init() {
         }
     });
 
+    // Listeners para os campos de data
+    document.getElementById('pickup-datetime-input').addEventListener('input', (e) => {
+        if (state.currentOrder) state.currentOrder.pickup_datetime = e.target.value;
+    });
+    document.getElementById('completed-at-input').addEventListener('input', (e) => {
+        if (state.currentOrder) state.currentOrder.completed_at = e.target.value;
+    });
+    document.getElementById('paid-at-input').addEventListener('input', (e) => {
+        if (state.currentOrder) state.currentOrder.paid_at = e.target.value;
+    });
+
+    // Carregamento inicial de dados
     ui.showLoading(true);
     try {
         const initialData = await api.getInitialData();
@@ -338,6 +478,8 @@ async function init() {
     } finally {
         ui.showLoading(false);
     }
+    
+    resetApplication();
 }
 
 document.addEventListener('DOMContentLoaded', init);
