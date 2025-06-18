@@ -53,21 +53,6 @@ function recalculateOrderTotals() {
     renderCurrentOrder();
 }
 
-// NOVA FUNÇÃO
-/**
- * Renderiza o pedido atual na UI, passando os callbacks necessários.
- */
-function renderCurrentOrder() {
-    if (state.currentOrder) {
-        ui.renderOrder(state.currentOrder, state.currentBalance, {
-            onRemoveItem: handleRemoveItemFromOrder,
-            onQuantityChange: handleQuantityChange,
-            onRemoveStagedPayment: handleRemoveStagedPayment,
-        });
-    }
-}
-
-// FUNÇÃO MODIFICADA
 async function loadOrder(orderId) {
     if (!orderId) return;
     ui.showLoading(true);
@@ -110,7 +95,6 @@ async function selectCustomer(customerId) {
     }
 }
 
-// FUNÇÃO MODIFICADA
 function createNewOrderInMemory() {
     if (!state.currentCustomer) return ui.showMessage('Selecione um cliente para iniciar um novo pedido.', 'error');
     
@@ -158,9 +142,6 @@ async function handleCustomerSubmit(event) {
     }
 }
 
-/**
- * Adiciona um produto selecionado ao pedido atual.
- */
 function handleAddProductToOrder(product) {
     if (!state.currentCustomer) return ui.showMessage('Por favor, selecione um cliente primeiro.', 'error');
     if (!state.currentOrder) createNewOrderInMemory();
@@ -201,51 +182,6 @@ function handleQuantityChange(orderItemId, newQuantity) {
     recalculateOrderTotals();
 }
 
-// FUNÇÃO MODIFICADA
-function handleRemoveItemFromOrder(itemId) {
-    if (!state.currentOrder) return;
-    state.currentOrder.items = state.currentOrder.items.filter(item => (item.order_item_id || item.temp_id) != itemId);
-    recalculateOrderTotals();
-}
-
-// FUNÇÃO MODIFICADA
-/**
- * Lida com a mudança de quantidade de um item no pedido.
- * Esta função atualiza a quantidade do item na memória (no objeto 'state').
- */
-/**
- * Lida com a mudança de quantidade de um item no pedido.
- */
-function handleQuantityChange(itemId, newQuantity) {
-    if (!state.currentOrder) return;
-
-    // Converte a nova quantidade para número e valida
-    const newQty = parseFloat(newQuantity);
-    if (isNaN(newQty) || newQty < 0) {
-        // Se a quantidade for inválida, não faz nada ou poderia resetar para 0
-        return; 
-    }
-
-    // **LÓGICA DE BUSCA CORRIGIDA E MAIS ROBUSTA**
-    // Converte ambos os IDs para string antes de comparar,
-    // o que evita problemas de tipo entre o ID numérico (ex: 5) e o ID de texto (ex: "temp_12345").
-    const item = state.currentOrder.items.find(i => {
-        const idToCompare = i.order_item_id || i.temp_id;
-        return String(idToCompare) === String(itemId);
-    });
-
-    if (item) {
-        // Atualiza a quantidade do item encontrado na memória
-        item.quantity = newQty;
-    }
-
-    // Dispara o recálculo dos totais e o redesenho da interface
-    recalculateOrderTotals();
-}
-
-/**
- * Lida com a mudança de status de execução do pedido.
- */
 function handleStatusChange(type, newStatus) {
     if (!state.currentOrder) return;
 
@@ -356,7 +292,6 @@ function handleRemoveStagedPayment(paymentId) {
     renderCurrentOrder();
 }
 
-// FUNÇÃO MODIFICADA
 async function handleSaveOrder() {
     if (!state.currentOrder) return ui.showMessage('Nenhum pedido ativo para salvar.', 'error');
     if (state.currentOrder.isNew) {
@@ -452,6 +387,7 @@ async function init() {
                 const orders = await api.searchOrders(searchTerm);
                 ui.renderOrderSuggestions(orders, (selectedOrderId) => {
                     loadOrder(selectedOrderId);
+                    ui.clearOrderSuggestions();
                 });
             } catch (error) { ui.showMessage(error.message, 'error'); }
         }, 300);
