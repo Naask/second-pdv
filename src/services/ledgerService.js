@@ -70,20 +70,6 @@ function syncSaleTransactionForOrder(customerId, orderId, newTotalToPayWithBalan
     return { success: true };
 }
 
-function applySaleTransaction(customerId, orderId, amountToPay) {
-    const balance = getCustomerBalance(customerId);
-    if (balance.totalBalance < amountToPay) {
-        throw new Error("Saldo insuficiente para cobrir o pagamento.");
-    }
-    return recordTransaction({
-        customerId,
-        type: 'SALE',
-        amount: amountToPay,
-        description: `Pagamento do Pedido #${orderId}`,
-        metadata: { orderId }
-    });
-}
-
 const addPrepaidPackage = db.transaction(({ customerId, paidAmount, bonusAmount }) => {
     recordTransaction({ customerId, type: 'PAYMENT_RECEIVED', amount: paidAmount, description: `Pacote pré-pago` });
     if (bonusAmount > 0) {
