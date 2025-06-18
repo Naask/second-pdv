@@ -68,12 +68,9 @@
                  <p>Pagamentos Aplicados: <strong id="payment-applied">R$ 0,00</strong></p>
                  <p class="payment-due">Restante a Pagar: <strong id="payment-remaining">R$ 0,00</strong></p>
             </div>
-            <div id="payment-methods" class="options-group">
-                <button class="option-button" data-method="Saldo">Usar Saldo</button>
-                <button class="option-button" data-method="Dinheiro">Dinheiro</button>
-                <button class="option-button" data-method="Pix">Pix</button>
-                <button class="option-button" data-method="Débito">Débito</button>
-                <button class="option-button" data-method="Crédito">Crédito</button>
+            <div class="form-group">
+                <label for="paid-at-input">Data de Pagamento:</label>
+                <input type="datetime-local" id="paid-at-input" class="form-control">
             </div>
             <ul id="staged-payments-list"></ul>
 

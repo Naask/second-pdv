@@ -21,7 +21,6 @@ const elements = {
     newCustomerForm: document.getElementById('new-customer-form'),
     addCreditBtn: document.getElementById('add-credit-btn'),
     addPackageBtn: document.getElementById('add-package-btn'),
-    // Elementos de pagamento
     paymentStatusDisplay: document.getElementById('payment-status-display'),
     paymentTotalDue: document.getElementById('payment-total-due'),
     paymentApplied: document.getElementById('payment-applied'),
@@ -106,11 +105,7 @@ function renderOrderItems(items, onRemove, onQuantityChange) {
 
     items.forEach(item => {
         const row = document.createElement('tr');
-        // Usa um ID temporário se o item for novo, ou o ID do banco se já foi salvo
         const itemId = item.order_item_id || item.temp_id;
-        
-        // **PONTO-CHAVE DA CORREÇÃO**
-        // O subtotal da linha é calculado aqui, usando a quantidade mais recente do item
         const itemTotalPrice = (item.unit_price || 0) * (item.quantity || 0);
 
         row.innerHTML = `
@@ -124,10 +119,8 @@ function renderOrderItems(items, onRemove, onQuantityChange) {
         // Adiciona os listeners para os botões e inputs da nova linha
         row.querySelector('.remove-item-btn').addEventListener('click', (e) => onRemove(e.target.dataset.itemId));
         row.querySelector('.quantity-input').addEventListener('change', (e) => {
-            const newQuantity = parseFloat(e.target.value);
-            onQuantityChange(e.target.dataset.itemId, newQuantity);
+            onQuantityChange(e.target.dataset.itemId, parseFloat(e.target.value))
         });
-
         elements.orderItemsTbody.appendChild(row);
     });
 }
@@ -142,17 +135,14 @@ function updateSummaryFooter(order) {
 
 function renderPaymentDetails(order, balance) {
     const totalAmount = order?.total_amount || 0;
-    const existingPayments = order?.payments || [];
-    const stagedPayments = order?.stagedPayments || [];
-
-    const totalPaid = existingPayments.reduce((sum, p) => sum + p.amount, 0);
-    const totalStaged = stagedPayments.reduce((sum, p) => sum + p.amount, 0);
-    const remaining = totalAmount - totalPaid - totalStaged;
+    const allPayments = [...(order?.payments || []), ...(order?.stagedPayments || [])];
+    const totalPaid = allPayments.reduce((sum, p) => sum + p.amount, 0);
+    const remaining = totalAmount - totalPaid;
     const customerBalance = balance?.totalBalance || 0;
 
     elements.paymentStatusDisplay.textContent = (order?.payment_status || 'AGUARDANDO').replace(/_/g, ' ');
     elements.paymentTotalDue.textContent = formatCurrency(totalAmount);
-    elements.paymentApplied.textContent = formatCurrency(totalPaid + totalStaged);
+    elements.paymentApplied.textContent = formatCurrency(totalPaid);
     elements.paymentRemaining.textContent = formatCurrency(remaining);
 
     elements.paymentMethods.querySelectorAll('button').forEach(btn => {
@@ -171,9 +161,9 @@ function renderStagedPayments(payments, onRemove) {
         const li = document.createElement('li');
         li.innerHTML = `
             <span>${p.method}: ${formatCurrency(p.amount)}</span>
-            <button data-payment-id="${p.id}">&times;</button>
+            <button class="remove-payment-btn" data-payment-id="${p.id}">&times;</button>
         `;
-        li.querySelector('button').addEventListener('click', (e) => onRemove(e.target.dataset.paymentId));
+        // O listener de clique agora é adicionado na função init, de forma delegada.
         elements.stagedPaymentsList.appendChild(li);
     });
 }
@@ -190,9 +180,9 @@ export function renderOrder(order, balance, callbacks) {
     renderPaymentDetails(order, balance);
     renderStagedPayments(order.stagedPayments || [], callbacks.onRemoveStagedPayment);
 
-    document.getElementById('pickup-datetime-input').value = order.pickup_datetime ? getISODateString(new Date(order.pickup_datetime)) : '';
-    document.getElementById('completed-at-input').value = order.completed_at ? getISODateString(new Date(order.completed_at)) : '';
-    elements.paidAtInput.value = order.paid_at ? getISODateString(new Date(order.paid_at)) : '';
+    document.getElementById('pickup-datetime-input').value = order.pickup_datetime || '';
+    document.getElementById('completed-at-input').value = order.completed_at || '';
+    elements.paidAtInput.value = order.paid_at || '';
 
     elements.executionStatusOptions.querySelectorAll('.option-button').forEach(btn => {
         const isSelected = btn.dataset.status === order.execution_status;
@@ -252,7 +242,12 @@ export function renderCustomerSuggestions(customers, onSelect) {
     });
 }
 
-export const clearCustomerSuggestions = () => elements.customerSuggestions.classList.add('hidden');
+export const clearCustomerSuggestions = () => {
+    if(elements.customerSuggestions) {
+        elements.customerSuggestions.innerHTML = '';
+        elements.customerSuggestions.classList.add('hidden');
+    }
+};
 
 export function renderOrderSuggestions(orders, onSelect) {
     const suggestionsDiv = document.getElementById('order-suggestions');
