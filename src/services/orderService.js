@@ -44,7 +44,6 @@ const saveOrder = db.transaction((orderData) => {
         db.prepare(updateSql).run(customer_id, execution_status, totalAmount, pickup_datetime, completed_at, paid_at, order_id);
     }
 
-    // 3. Sincroniza os itens do pedido
     db.prepare('DELETE FROM order_items WHERE order_id = ?').run(order_id);
     if (items && items.length > 0) {
         const itemInsert = db.prepare(`INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?)`);
