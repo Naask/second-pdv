@@ -255,6 +255,7 @@ body {
     background-color: var(--header-bg);
     color: var(--text-light);
 }
+
 .main-actions {
     margin-top: auto;
     display: flex;
