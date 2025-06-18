@@ -91,23 +91,16 @@ export function filterProducts(category) {
     });
 }
 
-/**
- * Renderiza as linhas da tabela de itens do pedido.
- * Esta função limpa a tabela e a reconstrói do zero com base nos dados atuais.
- */
 function renderOrderItems(items, onRemove, onQuantityChange) {
-    elements.orderItemsTbody.innerHTML = ''; // Limpa a tabela antes de redesenhar
-
+    elements.orderItemsTbody.innerHTML = '';
     if (!items || items.length === 0) {
         elements.orderItemsTbody.innerHTML = '<tr><td colspan="5">Adicione produtos ao pedido.</td></tr>';
         return;
     }
-
     items.forEach(item => {
         const row = document.createElement('tr');
         const itemId = item.order_item_id || item.temp_id;
         const itemTotalPrice = (item.unit_price || 0) * (item.quantity || 0);
-
         row.innerHTML = `
             <td><input type="number" class="quantity-input" value="${item.quantity}" data-item-id="${itemId}" min="0.1" step="${item.unit_of_measure === 'KG' ? '0.1' : '1'}"></td>
             <td>${item.product_name}</td>
@@ -115,8 +108,6 @@ function renderOrderItems(items, onRemove, onQuantityChange) {
             <td>${formatCurrency(itemTotalPrice)}</td>
             <td><button class="remove-item-btn" data-item-id="${itemId}">&times;</button></td>
         `;
-
-        // Adiciona os listeners para os botões e inputs da nova linha
         row.querySelector('.remove-item-btn').addEventListener('click', (e) => onRemove(e.target.dataset.itemId));
         row.querySelector('.quantity-input').addEventListener('change', (e) => {
             onQuantityChange(e.target.dataset.itemId, parseFloat(e.target.value))
@@ -288,7 +279,6 @@ export function renderCustomerOrdersModal(customer, orders, onSelect) {
     toggleModal('customer-orders-modal', true);
 }
 
-// ÚNICA DEFINIÇÃO DA FUNÇÃO
 export function resetOrderView(clearCustomer = true) {
     elements.orderIdDisplay.textContent = 'Pedido #NOVO';
     renderOrderItems([], () => {}, () => {});
