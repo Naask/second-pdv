@@ -55,7 +55,7 @@ function printReceipt(order, customer, balance) {
                 format: "CODE128",
                 lineColor: "#000",
                 width: 2,
-                height: 50,
+                height: 25,
                 displayValue: true,
                 fontSize: 14,
                 margin: 0

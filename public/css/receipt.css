@@ -3,14 +3,15 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 12px;
+    font-family: 'Consolas', 'Menlo', 'Dejavu Sans Mono', 'monospace';
+    font-size: 13px;
     color: #000;
+    /* A linha de font-weight foi REMOVIDA daqui para permitir que o negrito se destaque */
 }
 
 body {
     background-color: #fff;
-    width: 80mm; /* Largura padrão de impressoras térmicas */
+    width: 80mm;
 }
 
 .receipt {
@@ -24,7 +25,8 @@ header, footer .thanks {
 }
 
 header h1 {
-    font-size: 16px;
+    font-size: 18px;
+    font-weight: bold;
     margin-bottom: 5px;
 }
 
@@ -54,26 +56,14 @@ section p {
 }
 
 .items-table th, .items-table td {
-    padding: 3px 2px;
+    padding: 4px 2px;
     vertical-align: top;
 }
 
-.items-table th:nth-child(1), .items-table td:nth-child(1) {
-    width: 45%;
-    text-align: left;
-}
-.items-table th:nth-child(2), .items-table td:nth-child(2) {
-    width: 15%;
-    text-align: center;
-}
-.items-table th:nth-child(3), .items-table td:nth-child(3) {
-    width: 20%;
-    text-align: right;
-}
-.items-table th:nth-child(4), .items-table td:nth-child(4) {
-    width: 20%;
-    text-align: right;
-}
+.items-table th:nth-child(1), .items-table td:nth-child(1) { width: 45%; text-align: left; }
+.items-table th:nth-child(2), .items-table td:nth-child(2) { width: 15%; text-align: center; }
+.items-table th:nth-child(3), .items-table td:nth-child(3) { width: 20%; text-align: right; }
+.items-table th:nth-child(4), .items-table td:nth-child(4) { width: 20%; text-align: right; }
 
 footer {
     padding-top: 10px;
@@ -87,12 +77,11 @@ footer .summary p {
 
 footer .summary {
     font-weight: bold;
-    font-size: 14px;
+    font-size: 16px;
 }
 
-/* Adiciona um espaço acima da seção de informações de pagamento */
 footer .payment-info {
-    margin-top: 15px; 
+    margin-top: 10px; 
 }
 
 footer .payment-info p {
@@ -109,6 +98,11 @@ footer .thanks {
     display: flex;
     justify-content: center;
     margin: 15px 0;
+}
+
+strong {
+    /* Esta regra agora funcionará corretamente, criando um contraste visível */
+    font-weight: bold; 
 }
 
 @media print {
