@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recibo do Pedido</title>
+    <link rel="stylesheet" href="css/receipt.css">
+</head>
+<body>
+    <div class="receipt">
+        <header>
+            <h1>Brilho & Cia Lavanderia</h1>
+            <p>R. Bento de Arruda Camargo, 900</p>
+            <p>Telefone: (19) 99941-8333</p>
+            <p>&nbsp;</p>
+            <p>Horário de funcionamento:</p>
+            <p class="hours">Seg a Sex 08:00-17:00, Sáb 09:00-12:00</p>
+        </header>
+
+        <main>
+            <section class="order-details">
+                <p><span>Pedido:</span> <span id="receipt-order-id"></span></p>
+                <p><span>Data de Entrada:</span> <span id="receipt-entry-date"></span></p>
+                <p><span>Retirar a partir de:</span> <strong><span id="receipt-pickup-date"></span></strong></p>
+            </section>
+
+            <section class="customer-details">
+                <p><span>Cliente:</span> <strong><span id="receipt-customer-name"></span></strong></p>
+                <p><span>Telefone:</span> <strong><span id="receipt-customer-phone"></span></strong></p>
+            </section>
+
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Qtd</th>
+                        <th>V. Un.</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody id="receipt-items-tbody">
+                    </tbody>
+            </table>
+        </main>
+
+        <footer>
+            <div class="summary">
+                <p><span>TOTAL:</span> <strong id="receipt-total"></strong></p>
+                <p><span>Status Pagamento:</span> <strong id="receipt-payment-status"></strong></p>
+            </div>
+            <div class="payment-info">
+                <p><span>Saldo Cliente:</span> <strong id="receipt-customer-balance"></strong></p>
+            </div>
+            <p class="thanks">Obrigado pela preferência!</p>
+        </footer>
+    </div>
+    <script src="js/receipt.js"></script>
+</body>
+</html>

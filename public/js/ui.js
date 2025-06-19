@@ -29,6 +29,7 @@ const elements = {
     stagedPaymentsList: document.getElementById('staged-payments-list'),
     paidAtInput: document.getElementById('paid-at-input'),
     executionStatusOptions: document.getElementById('execution-status-options'),
+    printReceiptBtn: document.getElementById('print-receipt-btn'), // Adicione esta linha
 };
 
 export const formatCurrency = (amountInCents) => (amountInCents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -165,6 +166,8 @@ export function renderOrder(order, balance, callbacks) {
         return;
     }
     elements.orderIdDisplay.textContent = order.isNew ? 'Pedido #NOVO' : `Pedido #${order.order_id}`;
+    // Habilita ou desabilita o botão de impressão
+    elements.printReceiptBtn.disabled = !!order.isNew; // Desabilitado se o pedido for novo
     
     renderOrderItems(order.items, callbacks.onRemoveItem, callbacks.onQuantityChange);
     updateSummaryFooter(order);

@@ -353,6 +353,28 @@ function handleEditCustomerClick() {
     ui.toggleModal('new-customer-modal', true);
 }
 
+
+/**
+ * Abre uma nova janela para o recibo e envia os dados do pedido,
+ * cliente e saldo para ela.
+ */
+function handlePrintReceipt() {
+    if (!state.currentOrder || !state.currentCustomer || !state.currentBalance || state.currentOrder.isNew) {
+        return ui.showMessage('Selecione um pedido salvo para imprimir.', 'error');
+    }
+
+    const receiptWindow = window.open('receipt.html', 'Recibo', 'width=640,height=1200,scrollbars=yes');
+    
+    // Espera a janela carregar para enviar os dados
+    receiptWindow.onload = () => {
+        receiptWindow.postMessage({ 
+            order: state.currentOrder, 
+            customer: state.currentCustomer,
+            balance: state.currentBalance // Adicionada a informação do saldo
+        }, window.location.origin);
+    };
+}
+
 /**
  * FUNÇÃO SUBSTITUÍDA
  * Inicializa todos os listeners de eventos da aplicação.
@@ -403,6 +425,7 @@ async function init() {
     // Listeners para botões de ação principais
     document.getElementById('new-order-btn').addEventListener('click', resetApplication);
     document.getElementById('save-order-btn').addEventListener('click', handleSaveOrder);
+    document.getElementById('print-receipt-btn').addEventListener('click', handlePrintReceipt);
     document.getElementById('view-customer-orders-btn').addEventListener('click', handleViewCustomerOrders);
     document.getElementById('edit-customer-btn').addEventListener('click', handleEditCustomerClick);
     document.getElementById('new-customer-btn').addEventListener('click', () => {
