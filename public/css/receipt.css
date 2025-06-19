@@ -105,6 +105,12 @@ footer .thanks {
     text-align: center;
 }
 
+.barcode-container {
+    display: flex;
+    justify-content: center;
+    margin: 15px 0;
+}
+
 @media print {
     body > *:not(.receipt) {
         display: none;

@@ -16,7 +16,19 @@ const app = express();
 
 // Middlewares
 app.use(cors());
-app.use(helmet());
+
+// Configuração do Helmet para permitir o carregamento de scripts do CDN
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "script-src": ["'self'", "cdn.jsdelivr.net"], // Permite scripts do próprio domínio e do cdn.jsdelivr.net
+    },
+  })
+);
+
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
