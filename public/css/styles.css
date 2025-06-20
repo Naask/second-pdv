@@ -1,172 +1,313 @@
-:root {
-    --header-bg: #5a6f7b;
-    --panel-bg: #ffffff;
-    --body-bg: #e9ecef;
-    --primary-accent: #007bff;
-    --success-accent: #28a745;
-    --danger-accent: #dc3545;
-    --text-dark: #343a40;
-    --text-light: #f8f9fa;
-    --border-color: #dee2e6;
+/* ==========================================================================
+   CSS Stylesheet - Proposta de Redesign v2.0
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Variáveis Globais (Cores, Fontes, Padrões de Design)
+   -------------------------------------------------------------------------- */
+   :root {
+    /* Controle Mestre da Fonte: Altere aqui para ajustar toda a UI */
+    --base-font-size: 20px;
+
+    /* Paleta de Cores */
+    --color-primary: #007bff;           /* Azul para ações principais */
+    --color-primary-hover: #0056b3;
+    --color-success: #28a745;            /* Verde para sucesso/concluído */
+    --color-warning: #17a2b8;            /* Ciano para aguardando */
+    --color-danger: #dc3545;             /* Vermelho para perigo/remover */
+    --color-dark-blue: #343a40;          /* Azul escuro para texto/cabeçalho */
+    --color-light-gray: #f8f9fa;         /* Cinza claro para texto em fundos escuros */
+    --color-background: #e9ecef;         /* Fundo principal da página */
+    --color-surface: #ffffff;            /* Fundo dos painéis e inputs */
+    --color-border: #ced4da;
+
+    /* Padrões de UI */
+    --font-family-sans: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --border-radius: 6px;
+    --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+    --transition-speed: 0.2s ease;
 }
 
+/* --------------------------------------------------------------------------
+   2. Reset e Estilos Base
+   -------------------------------------------------------------------------- */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: Segoe UI, sans-serif;
+}
+
+html {
+    font-size: var(--base-font-size);
+}
+
+html, body {
+    height: 100vh;
+    overflow: hidden;
 }
 
 body {
-    background-color: var(--body-bg);
-    color: var(--text-dark);
-    padding-bottom: 70px;
+    font-family: var(--font-family-sans);
+    background-color: var(--color-background);
+    color: var(--color-dark-blue);
+    display: grid;
+    /* Layout vertical ajustado: sem rodapé global */
+    grid-template-rows: auto 1fr; 
+    grid-template-areas: "header" "main";
 }
 
-.main-header {
-    background-color: var(--header-bg);
-    color: var(--text-light);
-    padding: 10px 20px;
+/* --------------------------------------------------------------------------
+   3. Cabeçalho e Caixas de Sugestão
+   -------------------------------------------------------------------------- */
+   .main-header {
+    grid-area: header;
+    background-color: var(--color-dark-blue);
+    color: var(--color-light-gray);
+    padding: 0.5em 1.5em;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between; /* ADICIONADO: Alinha os grupos de itens nas extremidades */
+    gap: 1.5em;
+    box-shadow: var(--box-shadow);
+    z-index: 10;
 }
 
-.client-actions,
-.order-info {
+.header-group {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 0.8em;
 }
 
+/* Campos de busca mais largos */
+.header-input {
+    min-width: 250px;
+    padding: 0.5em 0.75em;
+    border: 1px solid #6c757d;
+    background-color: #495057;
+    color: var(--color-light-gray);
+}
+.header-input:focus {
+    background-color: #5a6268;
+    border-color: var(--color-primary);
+    box-shadow: none;
+}
+
+/* Caixa de sugestão mais larga e com melhor aparência */
 .search-container {
-    position: relative;
+    position: relative; 
 }
-
-.header-input,
-#customer-search-input {
-    padding: 5px 8px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-}
-
 .suggestions {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 5px); /* Aparece abaixo do input */
     left: 0;
-    width: 220px;
-    background-color: var(--panel-bg);
-    border: 1px solid var(--border-color);
-    z-index: 100;
-    max-height: 250px;
+    width: 350px; /* Largura aumentada */
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    z-index: 1000;
+    max-height: 300px;
     overflow-y: auto;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--box-shadow);
 }
-
 .suggestions div {
-    padding: 10px;
+    padding: 0.75em;
     cursor: pointer;
-    color: var(--text-dark);
+    color: var(--color-dark-blue);
 }
-
 .suggestions div:hover {
-    background-color: var(--body-bg);
+    background-color: var(--color-primary);
+    color: white;
 }
 
+.order-info {
+    display: flex;
+    align-items: center; /* Alinha verticalmente o texto e o campo de busca */
+    gap: 1em;            /* Adiciona um espaço entre o texto e o campo de busca */
+}
+
+.client-actions {
+    display: flex;
+    align-items: center; /* Alinha verticalmente todos os itens (texto, input, botões) */
+    gap: 1em;            /* Adiciona um espaço consistente entre cada item */
+}
+
+/* --------------------------------------------------------------------------
+   4. Layout Principal e Painéis
+   -------------------------------------------------------------------------- */
 .main-content {
+    grid-area: main;
     display: grid;
-    grid-template-columns: 300px 1fr 280px;
-    gap: 15px;
-    padding: 15px;
-    height: calc(100vh - 60px - 70px);
+    grid-template-columns: 320px 1fr 300px;
+    gap: 1.5em;
+    padding: 1.5em;
+    min-height: 0; 
+    overflow: hidden;
 }
 
 .panel {
-    background-color: var(--panel-bg);
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    background-color: var(--color-surface);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
     display: flex;
     flex-direction: column;
     overflow: hidden;
 }
 
-.panel-section {
-    padding: 10px;
+/* --------------------------------------------------------------------------
+   5. Coluna da Esquerda (Produtos)
+   -------------------------------------------------------------------------- */
+#product-selection-pane {
+    gap: 1em;
 }
-
-.scrollable {
-    flex-grow: 1;
-    overflow-y: auto;
-}
-
 #category-panel {
     flex-shrink: 0;
+    padding: 0.75em;
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 0.5em;
+    border-bottom: 1px solid var(--color-border);
 }
-
 .category-button {
-    padding: 8px 12px;
-    border: 1px solid var(--border-color);
-    background-color: var(--text-light);
+    border: 1px solid var(--color-border);
+    background-color: transparent;
     border-radius: 20px;
-    cursor: pointer;
+    padding: 0.4em 1em;
+    transition: all var(--transition-speed);
 }
-
 .category-button.selected {
-    background-color: var(--primary-accent);
-    color: var(--text-light);
-    border-color: var(--primary-accent);
+    background-color: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
 }
-
-#product-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 10px;
-    align-content: start;
+#product-list { 
+    flex-grow: 1; 
+    overflow-y: auto; 
+    padding: 0.75em; 
+    display: grid; 
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75em; 
+    align-content: start; 
 }
-
 .product-card {
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    padding: 10px;
+    border: 1px solid var(--color-border);
+    padding: 1em;
     text-align: center;
     cursor: pointer;
+    transition: all var(--transition-speed);
+    border-radius: var(--border-radius);
 }
-
 .product-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+    border-color: var(--color-primary);
+}
+/* Espaçamento entre nome e preço do produto */
+.product-card .product-name {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.5em;
 }
 
-.order-items-header {
-    padding: 15px;
-    border-bottom: 1px solid var(--border-color);
+/* --------------------------------------------------------------------------
+   6. Coluna Central (Itens do Pedido e Novo Rodapé)
+   -------------------------------------------------------------------------- */
+.order-items-header { padding: 1em; border-bottom: 1px solid var(--color-border); }
+#order-items-container { flex-grow: 1; overflow-y: auto; }
+#order-items-table { width: 100%; border-collapse: collapse; }
+#order-items-table th, #order-items-table td { padding: 0.75em 1em; }
+#order-items-table thead { background-color: var(--color-background); font-size: 0.9rem; }
+.remove-item-btn { background: none; border: none; color: var(--color-danger); cursor: pointer; font-size: 1.5rem; padding: 0 0.5em;}
+
+/* Novo estilo para o rodapé DENTRO do painel */
+.summary-footer {
+    padding: 1em;
+    border-top: 1px solid var(--color-border);
+    background-color: var(--color-background);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1em;
+    font-weight: 600;
+}
+.summary-footer span:nth-child(3) {
+    grid-column: 2 / 3;
+    font-size: 1.2em;
+    color: var(--color-primary);
+    text-align: right;
+}
+.summary-footer span:not(:nth-child(3)) {
+    font-size: 0.9em;
+    color: #6c757d;
 }
 
-#order-items-table {
-    width: 100%;
-    border-collapse: collapse;
+/* --------------------------------------------------------------------------
+   7. Coluna da Direita (Ações e Pagamento)
+   -------------------------------------------------------------------------- */
+#actions-pane { padding: 1.25em; gap: 1.25em; display: flex; flex-direction: column; overflow-y: auto; }
+
+/* Melhoria no painel de pagamento */
+#payment-breakdown {
+    background-color: var(--color-background);
+    padding: 1em;
+    border-radius: var(--border-radius);
+}
+#payment-breakdown p {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5em;
+    color: #6c757d;
+}
+#payment-breakdown p:last-child {
+    margin-bottom: 0;
+}
+#payment-breakdown strong {
+    color: var(--color-dark-blue);
+}
+#payment-breakdown .payment-due strong {
+    color: var(--color-danger);
+    font-size: 1.2em;
 }
 
-#order-items-table th,
-#order-items-table td {
-    padding: 12px 15px;
-    text-align: left;
+/* Botões Modernos e com Cores de Status */
+.header-btn, .action-btn-secondary, .option-button {
+    background-color: var(--color-surface);
+    color: var(--color-dark-blue);
+    border: 1px solid var(--color-border);
+    font-weight: 600;
+    transition: all var(--transition-speed);
+}
+.header-btn:hover, .action-btn-secondary:hover, .option-button:hover {
+    border-color: #80bdff;
+    background-color: #fefefe;
+}
+.action-btn.save {
+    background-color: var(--color-success);
+    color: white;
+    font-weight: bold;
+    border-color: var(--color-success);
+}
+.action-btn.save:hover { background-color: #218838; }
+.option-button.selected {
+    background-color: var(--color-dark-blue);
+    color: white;
+    border-color: var(--color-dark-blue);
+}
+.option-button.selected.status-green-light {
+    background-color: var(--color-warning); /* Verde claro/Ciano para aguardando */
+    color: white;
+    border-color: var(--color-warning);
+}
+.option-button.selected[data-status="CONCLUIDO"] {
+    background-color: var(--color-success);
+    color: white;
+    border-color: var(--color-success);
 }
 
-#order-items-table thead {
-    background-color: var(--text-light);
-    position: sticky;
-    top: 0;
-}
-
-/* Adicione estas duas regras ao seu arquivo CSS */
-
+/* --------------------------------------------------------------------------
+   8. Modal Elegante
+   -------------------------------------------------------------------------- */
 .modal {
     position: fixed;
-    z-index: 200; /* O fundo escuro fica nesta camada */
+    z-index: 1000;
     left: 0;
     top: 0;
     width: 100%;
@@ -175,174 +316,27 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all var(--transition-speed);
 }
-
+.modal:not(.hidden) {
+    opacity: 1;
+    visibility: visible;
+}
 .modal-content {
-    background-color: #fff;
-    color: #333;
+    background-color: var(--color-surface);
     padding: 2rem;
-    border-radius: 8px;
+    border-radius: var(--border-radius);
     width: 90%;
-    max-width: 500px; /* Largura padrão para modais pequenos */
-    position: relative;
-    z-index: 201;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    max-width: 500px;
+    box-shadow: var(--box-shadow);
+    transition: all var(--transition-speed);
+    transform: translateY(-20px);
 }
-
-/* Regra específica para modais maiores, como o de 'Ver Pedidos' */
+.modal:not(.hidden) .modal-content {
+    transform: translateY(0);
+}
 .modal-content.large {
-    max-width: 1000px; /* Aumenta a largura máxima para 800px */
-}
-
-/* Adicione esta regra para a tabela de pedidos do modal */
-
-#customer-orders-table {
-    width: 100%; /* Faz a tabela ocupar toda a largura disponível */
-    border-collapse: collapse; /* Garante que as bordas fiquem limpas */
-    margin-top: 1rem; /* Adiciona um espaço entre o título do modal e a tabela */
-}
-
-/* Opcional: Melhora o alinhamento do texto nas colunas */
-#customer-orders-table th, #customer-orders-table td {
-    text-align: left;
-    padding: 8px 12px;
-}
-
-.quantity-input {
-    width: 60px;
-    text-align: center;
-}
-
-.remove-item-btn {
-    background: none;
-    border: none;
-    color: var(--danger-accent);
-    cursor: pointer;
-    font-size: 1.2rem;
-}
-
-#actions-pane {
-    padding: 15px;
-    gap: 15px;
-}
-
-#customer-details-card {
-    background-color: var(--body-bg);
-    padding: 15px;
-    border-radius: 4px;
-    text-align: center;
-}
-
-.action-btn-secondary {
-    width: 100%;
-    padding: 8px;
-}
-
-.options-group {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-}
-
-.option-button {
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.option-button.selected {
-    background-color: var(--header-bg);
-    color: var(--text-light);
-}
-
-.main-actions {
-    margin-top: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.action-btn {
-    padding: 15px;
-    font-size: 1.1rem;
-    font-weight: bold;
-    border: none;
-    cursor: pointer;
-}
-
-.action-btn.save {
-    background-color: var(--primary-accent);
-    color: white;
-}
-
-.action-btn.new {
-    background-color: var(--text-light);
-    border: 1px solid var(--border-color);
-}
-
-.summary-footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background-color: var(--header-bg);
-    color: var(--text-light);
-    padding: 15px;
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    font-size: 1.2rem;
-    font-weight: bold;
-}
-
-.hidden {
-    display: none !important;
-}
-
-.payment-info {
-    margin-bottom: 10px;
-    font-weight: bold;
-    padding: 5px;
-    background-color: #f8f9fa;
-    border-radius: 4px;
-}
-
-.payment-breakdown {
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    padding: 10px;
-    margin-top: 10px;
-}
-
-.payment-breakdown p {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.9rem;
-    margin-bottom: 5px;
-}
-
-.payment-breakdown .payment-due {
-    font-size: 1.1rem;
-    font-weight: bold;
-    color: var(--primary-accent);
-    border-top: 1px solid var(--border-color);
-    margin-top: 5px;
-    padding-top: 5px;
-}
-
-#staged-payments-list {
-    list-style: none;
-    padding: 0;
-    margin-top: 10px;
-    font-size: 0.8rem;
-}
-
-#staged-payments-list li {
-    display: flex;
-    justify-content: space-between;
-    padding: 2px 5px;
-    background-color: #e9ecef;
-    margin-bottom: 2px;
-    border-radius: 3px;
+    max-width: 1000px;
 }

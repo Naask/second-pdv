@@ -35,6 +35,11 @@
                     <thead><tr><th>Qtd.</th><th>Produto</th><th>V. Un.</th><th>Subtotal</th><th></th></tr></thead>
                     <tbody id="order-items-tbody"></tbody>
                 </table>
+                <footer class="summary-footer">
+                    <span id="footer-item-count">ITENS: 0</span>
+                    <span id="footer-subtotal">SUBTOTAL: R$ 0,00</span>
+                    <span id="footer-total">TOTAL: R$ 0,00</span>
+                </footer>
             </div>
         </section>
         <aside id="actions-pane" class="panel">
@@ -86,7 +91,6 @@
             </div>
         </aside>
     </main>
-    <footer class="summary-footer"><span id="footer-item-count">ITENS: 0</span><span id="footer-subtotal">SUBTOTAL: R$ 0,00</span><span id="footer-total">TOTAL: R$ 0,00</span></footer>
     <template id="product-card-template"><div class="product-card"><span class="product-name"></span><span class="product-price"></span></div></template>
     
     <div id="new-customer-modal" class="modal hidden">
