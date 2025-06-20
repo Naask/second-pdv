@@ -196,35 +196,6 @@ function handleStatusChange(type, newStatus) {
 
 /**
  * NOVA FUNÇÃO
- * Lida com o envio do formulário de adicionar crédito.
- */
-async function handleAddCreditSubmit(event) {
-    event.preventDefault(); // Impede o recarregamento da página
-    if (!state.currentCustomer) return;
-
-    const form = event.target;
-    const amount = parseInt(form.querySelector('#credit-amount').value, 10);
-
-    if (isNaN(amount) || amount <= 0) {
-        return ui.showMessage('Por favor, insira um valor de crédito válido em centavos.', 'error');
-    }
-
-    ui.showLoading(true);
-    try {
-        await api.addCredit(state.currentCustomer.customer_id, { amount, description: 'Crédito adicionado manualmente' });
-        ui.showMessage('Crédito adicionado com sucesso!');
-        ui.toggleModal('add-credit-modal', false);
-        // Recarrega os dados do cliente para atualizar o saldo na tela
-        await selectCustomer(state.currentCustomer.customer_id);
-    } catch (error) {
-        ui.showMessage(error.message, 'error');
-    } finally {
-        ui.showLoading(false);
-    }
-}
-
-/**
- * NOVA FUNÇÃO
  * Lida com o envio do formulário de comprar pacote.
  */
 async function handleAddPackageSubmit(event) {
@@ -434,13 +405,7 @@ async function init() {
         ui.toggleModal('new-customer-modal', true);
     });
     
-    // **LISTENERS CORRIGIDOS/ADICIONADOS**
-    // Adiciona listeners para os botões de crédito e pacote
-    document.getElementById('add-credit-btn').addEventListener('click', () => {
-        if (!state.currentCustomer) return;
-        document.getElementById('add-credit-form').reset();
-        ui.toggleModal('add-credit-modal', true);
-    });
+    // Adiciona listeners para o botão de pacote
 
     document.getElementById('add-package-btn').addEventListener('click', () => {
         if (!state.currentCustomer) return;
@@ -450,7 +415,6 @@ async function init() {
 
     // Listeners para submissão de formulários
     document.getElementById('new-customer-form').addEventListener('submit', handleCustomerSubmit);
-    document.getElementById('add-credit-form').addEventListener('submit', handleAddCreditSubmit);
     document.getElementById('add-package-form').addEventListener('submit', handleAddPackageSubmit);
     
     // Listeners para fechar todos os modais

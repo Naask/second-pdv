@@ -19,7 +19,6 @@ const elements = {
     footerTotal: document.getElementById('footer-total'),
     newCustomerModal: document.getElementById('new-customer-modal'),
     newCustomerForm: document.getElementById('new-customer-form'),
-    addCreditBtn: document.getElementById('add-credit-btn'),
     addPackageBtn: document.getElementById('add-package-btn'),
     paymentStatusDisplay: document.getElementById('payment-status-display'),
     paymentTotalDue: document.getElementById('payment-total-due'),
@@ -29,7 +28,9 @@ const elements = {
     stagedPaymentsList: document.getElementById('staged-payments-list'),
     paidAtInput: document.getElementById('paid-at-input'),
     executionStatusOptions: document.getElementById('execution-status-options'),
-    printReceiptBtn: document.getElementById('print-receipt-btn'), // Adicione esta linha
+    headerCustomerBalance: document.getElementById('header-customer-balance'),
+    // A LINHA ABAIXO FOI ADICIONADA DE VOLTA
+    printReceiptBtn: document.getElementById('print-receipt-btn'),
 };
 
 export const formatCurrency = (amountInCents) => (amountInCents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -192,20 +193,25 @@ export function renderOrder(order, balance, callbacks) {
 export function renderCustomerInfo(customer, balance) {
     if (customer) {
         elements.customerNameDisplay.textContent = customer.name;
-        elements.cardCustomerName.textContent = customer.name;
-        elements.cardCustomerBalance.textContent = `Saldo: ${formatCurrency(balance.totalBalance)}`;
+        // Atualiza o novo display de saldo no cabeçalho
+        elements.headerCustomerBalance.textContent = `Saldo: ${formatCurrency(balance.totalBalance)}`;
+        elements.headerCustomerBalance.style.display = 'inline-block'; // Garante que ele seja visível
+        
+        // Habilita os botões de ação do cliente que agora estão no cabeçalho
         elements.viewCustomerOrdersBtn.disabled = false;
         elements.editCustomerBtn.disabled = false;
-        elements.addCreditBtn.disabled = false;
-        elements.addPackageBtn.disabled = false;
+        // O botão de pacote pode ter sido removido do header para simplificar, mas se existir, habilite-o
+        if (elements.addPackageBtn) elements.addPackageBtn.disabled = false;
+
     } else {
         elements.customerNameDisplay.textContent = 'Nenhum';
-        elements.cardCustomerName.textContent = 'Selecione um cliente';
-        elements.cardCustomerBalance.textContent = 'Saldo: R$ 0,00';
+        // Esconde o display de saldo se nenhum cliente estiver selecionado
+        elements.headerCustomerBalance.style.display = 'none';
+
+        // Desabilita os botões de ação do cliente
         elements.viewCustomerOrdersBtn.disabled = true;
         elements.editCustomerBtn.disabled = true;
-        elements.addCreditBtn.disabled = true;
-        elements.addPackageBtn.disabled = true;
+        if (elements.addPackageBtn) elements.addPackageBtn.disabled = true;
     }
 }
 

@@ -105,12 +105,13 @@ button {
     border-color: var(--color-primary);
 }
 .search-container { position: relative; }
+/* Garante que o fundo da caixa de sugestão seja branco */
 .suggestions {
     position: absolute;
     top: calc(100% + 5px);
     left: 0;
     width: 350px;
-    background-color: var(--color-surface);
+    background-color: var(--color-surface); /* Garante o fundo branco */
     border: 1px solid var(--color-border);
     border-radius: var(--border-radius);
     z-index: 1000;
@@ -118,8 +119,19 @@ button {
     overflow-y: auto;
     box-shadow: var(--box-shadow);
 }
-.suggestions div { padding: 0.75em; cursor: pointer; }
-.suggestions div:hover { background-color: var(--color-primary); color: white; }
+
+/* Garante que o texto dentro da caixa seja escuro e legível */
+.suggestions div {
+    padding: 0.75em;
+    cursor: pointer;
+    color: var(--color-dark-blue); /* CORRIGIDO: Define a cor do texto para escuro */
+}
+
+/* Mantém o efeito de destaque ao passar o mouse */
+.suggestions div:hover {
+    background-color: var(--color-primary);
+    color: white;
+}
 
 .main-content {
     grid-area: main;

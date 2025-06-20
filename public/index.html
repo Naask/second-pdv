@@ -11,16 +11,31 @@
     <div id="loading-overlay" class="hidden"><div class="spinner"></div></div>
     <div id="message-container"></div>
     <header class="main-header">
-        <div class="order-info">
+        <div class="header-group">
             <span id="order-id-display">Pedido #NOVO</span>
-            <div class="search-container"><input type="text" id="order-search-input" class="header-input" placeholder="Buscar Pedido..."><div id="order-suggestions" class="suggestions hidden"></div></div>
+            <div class="search-container">
+                <input type="text" id="order-search-input" class="header-input" placeholder="Buscar Pedido...">
+                <div id="order-suggestions" class="suggestions hidden"></div>
+            </div>
         </div>
-        <div class="client-actions">
+        
+        <div class="header-group" id="customer-actions-group">
             <span>Cliente:</span>
-            <div class="search-container"><input type="text" id="customer-search-input" placeholder="Buscar Cliente..."><div id="customer-suggestions" class="suggestions hidden"></div></div>
+            <div class="search-container">
+                <input type="text" id="customer-search-input" class="header-input" placeholder="Buscar Cliente...">
+                <div id="customer-suggestions" class="suggestions hidden"></div>
+            </div>
             <span id="customer-name-display">Nenhum</span>
+    
             <button id="new-customer-btn" class="header-btn">Novo</button>
             <button id="edit-customer-btn" class="header-btn" disabled>Editar</button>
+            
+            <div id="header-customer-balance" class="customer-balance-display">
+                Saldo: R$ 0,00
+            </div>
+            
+            <button id="add-package-btn" class="header-btn" disabled>+ Pacote</button>
+            <button id="view-customer-orders-btn" class="header-btn" disabled>Ver Pedidos</button>
         </div>
     </header>
     <main class="main-content">
@@ -43,15 +58,7 @@
             </div>
         </section>
         <aside id="actions-pane" class="panel">
-            <h4>Cliente Selecionado</h4>
-            <div id="customer-details-card">
-                <strong id="card-customer-name">Selecione um cliente</strong><p id="card-customer-balance">Saldo: R$ 0,00</p>
-            </div>
-            <button id="view-customer-orders-btn" class="action-btn-secondary" disabled>Ver Pedidos</button>
-            <div class="customer-actions">
-                <button id="add-credit-btn" class="action-btn-secondary" disabled>Adicionar Crédito</button>
-                <button id="add-package-btn" class="action-btn-secondary" disabled>Comprar Pacote</button>
-            </div>
+
             <div class="form-group"><label for="pickup-datetime-input">Pronto para Retirada:</label><input type="datetime-local" id="pickup-datetime-input" class="form-control"></div>
             
             <h4>Status do Serviço</h4>
