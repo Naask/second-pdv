@@ -1,27 +1,22 @@
 /* ==========================================================================
-   CSS Stylesheet - Proposta de Redesign v2.0
+   CSS Stylesheet - Proposta de Redesign v2.1
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
    1. Variáveis Globais (Cores, Fontes, Padrões de Design)
    -------------------------------------------------------------------------- */
    :root {
-    /* Controle Mestre da Fonte: Altere aqui para ajustar toda a UI */
-    --base-font-size: 20px;
-
-    /* Paleta de Cores */
-    --color-primary: #007bff;           /* Azul para ações principais */
+    --base-font-size: 18px;
+    --color-primary: #007bff;
     --color-primary-hover: #0056b3;
-    --color-success: #28a745;            /* Verde para sucesso/concluído */
-    --color-warning: #17a2b8;            /* Ciano para aguardando */
-    --color-danger: #dc3545;             /* Vermelho para perigo/remover */
-    --color-dark-blue: #343a40;          /* Azul escuro para texto/cabeçalho */
-    --color-light-gray: #f8f9fa;         /* Cinza claro para texto em fundos escuros */
-    --color-background: #e9ecef;         /* Fundo principal da página */
-    --color-surface: #ffffff;            /* Fundo dos painéis e inputs */
+    --color-success: #28a745;
+    --color-warning: #17a2b8;
+    --color-danger: #dc3545;
+    --color-dark-blue: #343a40;
+    --color-light-gray: #f8f9fa;
+    --color-background: #e9ecef;
+    --color-surface: #ffffff;
     --color-border: #ced4da;
-
-    /* Padrões de UI */
     --font-family-sans: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     --border-radius: 6px;
     --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
@@ -51,37 +46,56 @@ body {
     background-color: var(--color-background);
     color: var(--color-dark-blue);
     display: grid;
-    /* Layout vertical ajustado: sem rodapé global */
     grid-template-rows: auto 1fr; 
     grid-template-areas: "header" "main";
 }
 
 /* --------------------------------------------------------------------------
-   3. Cabeçalho e Caixas de Sugestão
+   3. Layout e Componentes Gerais
    -------------------------------------------------------------------------- */
-   .main-header {
+input[type="text"],
+input[type="tel"],
+input[type="email"],
+input[type="number"],
+input[type="datetime-local"],
+button,
+select,
+textarea {
+    font-family: inherit;
+    font-size: 1rem;
+    padding: 0.6em 0.8em;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    background-color: var(--color-surface);
+    transition: all var(--transition-speed);
+}
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+button {
+    cursor: pointer;
+}
+
+.main-header {
     grid-area: header;
     background-color: var(--color-dark-blue);
     color: var(--color-light-gray);
     padding: 0.5em 1.5em;
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: space-between; /* ADICIONADO: Alinha os grupos de itens nas extremidades */
-    gap: 1.5em;
     box-shadow: var(--box-shadow);
     z-index: 10;
 }
-
-.header-group {
+.header-group, .order-info, .client-actions {
     display: flex;
     align-items: center;
-    gap: 0.8em;
+    gap: 1em;
 }
-
-/* Campos de busca mais largos */
 .header-input {
     min-width: 250px;
-    padding: 0.5em 0.75em;
     border: 1px solid #6c757d;
     background-color: #495057;
     color: var(--color-light-gray);
@@ -89,18 +103,13 @@ body {
 .header-input:focus {
     background-color: #5a6268;
     border-color: var(--color-primary);
-    box-shadow: none;
 }
-
-/* Caixa de sugestão mais larga e com melhor aparência */
-.search-container {
-    position: relative; 
-}
+.search-container { position: relative; }
 .suggestions {
     position: absolute;
-    top: calc(100% + 5px); /* Aparece abaixo do input */
+    top: calc(100% + 5px);
     left: 0;
-    width: 350px; /* Largura aumentada */
+    width: 350px;
     background-color: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--border-radius);
@@ -109,31 +118,9 @@ body {
     overflow-y: auto;
     box-shadow: var(--box-shadow);
 }
-.suggestions div {
-    padding: 0.75em;
-    cursor: pointer;
-    color: var(--color-dark-blue);
-}
-.suggestions div:hover {
-    background-color: var(--color-primary);
-    color: white;
-}
+.suggestions div { padding: 0.75em; cursor: pointer; }
+.suggestions div:hover { background-color: var(--color-primary); color: white; }
 
-.order-info {
-    display: flex;
-    align-items: center; /* Alinha verticalmente o texto e o campo de busca */
-    gap: 1em;            /* Adiciona um espaço entre o texto e o campo de busca */
-}
-
-.client-actions {
-    display: flex;
-    align-items: center; /* Alinha verticalmente todos os itens (texto, input, botões) */
-    gap: 1em;            /* Adiciona um espaço consistente entre cada item */
-}
-
-/* --------------------------------------------------------------------------
-   4. Layout Principal e Painéis
-   -------------------------------------------------------------------------- */
 .main-content {
     grid-area: main;
     display: grid;
@@ -144,6 +131,7 @@ body {
     overflow: hidden;
 }
 
+/* RELEVANTE PARA O RODAPÉ FIXO */
 .panel {
     background-color: var(--color-surface);
     border-radius: var(--border-radius);
@@ -154,71 +142,34 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   5. Coluna da Esquerda (Produtos)
+   4. Estilos das Colunas Específicas
    -------------------------------------------------------------------------- */
-#product-selection-pane {
-    gap: 1em;
-}
-#category-panel {
-    flex-shrink: 0;
-    padding: 0.75em;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5em;
-    border-bottom: 1px solid var(--color-border);
-}
-.category-button {
-    border: 1px solid var(--color-border);
-    background-color: transparent;
-    border-radius: 20px;
-    padding: 0.4em 1em;
-    transition: all var(--transition-speed);
-}
-.category-button.selected {
-    background-color: var(--color-primary);
-    color: white;
-    border-color: var(--color-primary);
-}
-#product-list { 
-    flex-grow: 1; 
-    overflow-y: auto; 
-    padding: 0.75em; 
-    display: grid; 
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75em; 
-    align-content: start; 
-}
-.product-card {
-    border: 1px solid var(--color-border);
-    padding: 1em;
-    text-align: center;
-    cursor: pointer;
-    transition: all var(--transition-speed);
-    border-radius: var(--border-radius);
-}
-.product-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.1);
-    border-color: var(--color-primary);
-}
-/* Espaçamento entre nome e preço do produto */
-.product-card .product-name {
-    font-weight: 600;
-    display: block;
-    margin-bottom: 0.5em;
-}
 
-/* --------------------------------------------------------------------------
-   6. Coluna Central (Itens do Pedido e Novo Rodapé)
-   -------------------------------------------------------------------------- */
-.order-items-header { padding: 1em; border-bottom: 1px solid var(--color-border); }
-#order-items-container { flex-grow: 1; overflow-y: auto; }
+/* Coluna da Esquerda (Produtos) */
+#product-selection-pane { gap: 1em; }
+#category-panel { flex-shrink: 0; padding: 0.75em; display: flex; flex-wrap: wrap; gap: 0.5em; border-bottom: 1px solid var(--color-border); }
+.category-button { border: 1px solid var(--color-border); background-color: transparent; border-radius: 20px; padding: 0.4em 1em; transition: all var(--transition-speed); }
+.category-button.selected { background-color: var(--color-primary); color: white; border-color: var(--color-primary); }
+#product-list { flex-grow: 1; overflow-y: auto; padding: 0.75em; display: grid; grid-template-columns: 1fr 1fr; gap: 0.75em; align-content: start; }
+.product-card { border: 1px solid var(--color-border); padding: 1em; text-align: center; cursor: pointer; transition: all var(--transition-speed); border-radius: var(--border-radius); }
+.product-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); border-color: var(--color-primary); }
+.product-card .product-name { font-weight: 600; display: block; margin-bottom: 0.5em; }
+
+/* Coluna Central (Itens do Pedido e Rodapé) */
+.order-items-header { padding: 1em; border-bottom: 1px solid var(--color-border); flex-shrink: 0; }
+
+/* RELEVANTE PARA O RODAPÉ FIXO */
+#order-items-container {
+    flex-grow: 1; /* Faz esta área se esticar para ocupar todo o espaço vertical livre */
+    overflow-y: auto; /* Adiciona rolagem APENAS à lista de itens */
+    min-height: 0; /* Correção de compatibilidade para flexbox */
+}
 #order-items-table { width: 100%; border-collapse: collapse; }
 #order-items-table th, #order-items-table td { padding: 0.75em 1em; }
-#order-items-table thead { background-color: var(--color-background); font-size: 0.9rem; }
+#order-items-table thead { background-color: var(--color-background); font-size: 0.9rem; position: sticky; top: 0; }
 .remove-item-btn { background: none; border: none; color: var(--color-danger); cursor: pointer; font-size: 1.5rem; padding: 0 0.5em;}
 
-/* Novo estilo para o rodapé DENTRO do painel */
+/* RELEVANTE PARA O RODAPÉ FIXO */
 .summary-footer {
     padding: 1em;
     border-top: 1px solid var(--color-border);
@@ -227,116 +178,36 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 1em;
     font-weight: 600;
+    flex-shrink: 0; /* Impede que o rodapé encolha */
 }
-.summary-footer span:nth-child(3) {
-    grid-column: 2 / 3;
-    font-size: 1.2em;
-    color: var(--color-primary);
-    text-align: right;
-}
-.summary-footer span:not(:nth-child(3)) {
-    font-size: 0.9em;
-    color: #6c757d;
-}
+.summary-footer span:nth-child(3) { grid-column: 2 / 3; font-size: 1.2em; color: var(--color-primary); text-align: right; }
+.summary-footer span:not(:nth-child(3)) { font-size: 0.9em; color: #6c757d; }
 
-/* --------------------------------------------------------------------------
-   7. Coluna da Direita (Ações e Pagamento)
-   -------------------------------------------------------------------------- */
+/* Coluna da Direita (Ações) */
 #actions-pane { padding: 1.25em; gap: 1.25em; display: flex; flex-direction: column; overflow-y: auto; }
+#customer-details-card { background-color: var(--color-background); padding: 1em; text-align: center; }
+#card-customer-balance { color: var(--color-success); font-weight: bold; }
+#payment-breakdown { background-color: var(--color-background); padding: 1em; border-radius: var(--border-radius); }
+#payment-breakdown p { display: flex; justify-content: space-between; margin-bottom: 0.5em; color: #6c757d; }
+#payment-breakdown p:last-child { margin-bottom: 0; }
+#payment-breakdown strong { color: var(--color-dark-blue); }
+#payment-breakdown .payment-due strong { color: var(--color-danger); font-size: 1.2em; }
+.options-group { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75em; }
 
-/* Melhoria no painel de pagamento */
-#payment-breakdown {
-    background-color: var(--color-background);
-    padding: 1em;
-    border-radius: var(--border-radius);
-}
-#payment-breakdown p {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 0.5em;
-    color: #6c757d;
-}
-#payment-breakdown p:last-child {
-    margin-bottom: 0;
-}
-#payment-breakdown strong {
-    color: var(--color-dark-blue);
-}
-#payment-breakdown .payment-due strong {
-    color: var(--color-danger);
-    font-size: 1.2em;
-}
-
-/* Botões Modernos e com Cores de Status */
-.header-btn, .action-btn-secondary, .option-button {
-    background-color: var(--color-surface);
-    color: var(--color-dark-blue);
-    border: 1px solid var(--color-border);
-    font-weight: 600;
-    transition: all var(--transition-speed);
-}
-.header-btn:hover, .action-btn-secondary:hover, .option-button:hover {
-    border-color: #80bdff;
-    background-color: #fefefe;
-}
-.action-btn.save {
-    background-color: var(--color-success);
-    color: white;
-    font-weight: bold;
-    border-color: var(--color-success);
-}
+/* Botões */
+.header-btn, .action-btn-secondary, .option-button { background-color: var(--color-surface); color: var(--color-dark-blue); border: 1px solid var(--color-border); font-weight: 600; transition: all var(--transition-speed); }
+.header-btn:hover, .action-btn-secondary:hover, .option-button:hover { border-color: #80bdff; background-color: #fefefe; }
+.action-btn.save { background-color: var(--color-success); color: white; font-weight: bold; border-color: var(--color-success); }
 .action-btn.save:hover { background-color: #218838; }
-.option-button.selected {
-    background-color: var(--color-dark-blue);
-    color: white;
-    border-color: var(--color-dark-blue);
-}
-.option-button.selected.status-green-light {
-    background-color: var(--color-warning); /* Verde claro/Ciano para aguardando */
-    color: white;
-    border-color: var(--color-warning);
-}
-.option-button.selected[data-status="CONCLUIDO"] {
-    background-color: var(--color-success);
-    color: white;
-    border-color: var(--color-success);
-}
+.main-actions { margin-top: auto; display: flex; flex-direction: column; gap: 0.75em; padding-top: 1em; }
+.option-button.selected { background-color: var(--color-dark-blue); color: white; border-color: var(--color-dark-blue); }
+.option-button.selected.status-green-light { background-color: var(--color-warning); color: white; border-color: var(--color-warning); }
+.option-button.selected[data-status="CONCLUIDO"] { background-color: var(--color-success); color: white; border-color: var(--color-success); }
 
-/* --------------------------------------------------------------------------
-   8. Modal Elegante
-   -------------------------------------------------------------------------- */
-.modal {
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    opacity: 0;
-    visibility: hidden;
-    transition: all var(--transition-speed);
-}
-.modal:not(.hidden) {
-    opacity: 1;
-    visibility: visible;
-}
-.modal-content {
-    background-color: var(--color-surface);
-    padding: 2rem;
-    border-radius: var(--border-radius);
-    width: 90%;
-    max-width: 500px;
-    box-shadow: var(--box-shadow);
-    transition: all var(--transition-speed);
-    transform: translateY(-20px);
-}
-.modal:not(.hidden) .modal-content {
-    transform: translateY(0);
-}
-.modal-content.large {
-    max-width: 1000px;
-}
+/* Modais */
+.modal { position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all var(--transition-speed); }
+.modal:not(.hidden) { opacity: 1; visibility: visible; }
+.modal-content { background-color: var(--color-surface); padding: 2rem; border-radius: var(--border-radius); width: 90%; max-width: 500px; box-shadow: var(--box-shadow); transition: all var(--transition-speed); transform: translateY(-20px); }
+.modal:not(.hidden) .modal-content { transform: translateY(0); }
+.modal-content.large { max-width: 1000px; }
+.hidden { display: none !important; }
