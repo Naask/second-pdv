@@ -136,7 +136,8 @@ button {
 .main-content {
     grid-area: main;
     display: grid;
-    grid-template-columns: 320px 1fr 300px;
+    /* Coluna de ações (a terceira) aumentada para 420px */
+    grid-template-columns: 320px 1fr 620px;
     gap: 1.5em;
     padding: 1.5em;
     min-height: 0; 
@@ -204,8 +205,21 @@ button {
 #payment-breakdown p:last-child { margin-bottom: 0; }
 #payment-breakdown strong { color: var(--color-dark-blue); }
 #payment-breakdown .payment-due strong { color: var(--color-danger); font-size: 1.2em; }
-.options-group { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75em; }
+/* Substitua a regra .options-group por estas duas */
 
+/* Coloca os 4 botões de status em uma única linha */
+#execution-status-options {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5em;
+}
+
+/* Mantém os botões de pagamento em uma grade de 3 colunas */
+#payment-methods {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5em;
+}
 /* Botões */
 .header-btn, .action-btn-secondary, .option-button { background-color: var(--color-surface); color: var(--color-dark-blue); border: 1px solid var(--color-border); font-weight: 600; transition: all var(--transition-speed); }
 .header-btn:hover, .action-btn-secondary:hover, .option-button:hover { border-color: #80bdff; background-color: #fefefe; }
@@ -220,11 +234,16 @@ button {
 }
 .main-actions {
     margin-top: auto;
-    display: flex; /* Transforma em um contêiner flexível */
-    flex-direction: row; /* Alinha os botões em uma linha */
-    gap: 0.75em;     /* Adiciona um espaço entre os botões */
+    display: flex;
+    flex-direction: row;
+    gap: 0.75em;
     padding-top: 1em;
     flex-shrink: 0;
+    
+    /* ADICIONADO: Permite rolagem horizontal se os botões excederem o espaço */
+    overflow-x: auto;
+    /* Adiciona um pequeno preenchimento inferior para a barra de rolagem não ficar colada */
+    padding-bottom: 10px;
 }
 
 .option-button.selected { background-color: var(--color-dark-blue); color: white; border-color: var(--color-dark-blue); }
