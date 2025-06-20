@@ -209,9 +209,24 @@ button {
 /* Botões */
 .header-btn, .action-btn-secondary, .option-button { background-color: var(--color-surface); color: var(--color-dark-blue); border: 1px solid var(--color-border); font-weight: 600; transition: all var(--transition-speed); }
 .header-btn:hover, .action-btn-secondary:hover, .option-button:hover { border-color: #80bdff; background-color: #fefefe; }
-.action-btn.save { background-color: var(--color-success); color: white; font-weight: bold; border-color: var(--color-success); }
-.action-btn.save:hover { background-color: #218838; }
-.main-actions { margin-top: auto; display: flex; flex-direction: column; gap: 0.75em; padding-top: 1em; }
+.action-btn.save {
+    background-color: transparent; /* CORRIGIDO: Usa 'transparent' para um fundo transparente */
+    border-color: var(--color-primary);
+}
+
+.action-btn.save:hover {
+    background-color: var(--color-primary); /* Preenche com a cor primária ao passar o mouse */
+    color: white;                           /* O texto fica branco para contrastar */
+}
+.main-actions {
+    margin-top: auto;
+    display: flex; /* Transforma em um contêiner flexível */
+    flex-direction: row; /* Alinha os botões em uma linha */
+    gap: 0.75em;     /* Adiciona um espaço entre os botões */
+    padding-top: 1em;
+    flex-shrink: 0;
+}
+
 .option-button.selected { background-color: var(--color-dark-blue); color: white; border-color: var(--color-dark-blue); }
 .option-button.selected.status-green-light { background-color: var(--color-warning); color: white; border-color: var(--color-warning); }
 .option-button.selected[data-status="CONCLUIDO"] { background-color: var(--color-success); color: white; border-color: var(--color-success); }
