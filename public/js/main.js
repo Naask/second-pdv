@@ -326,24 +326,112 @@ function handleEditCustomerClick() {
 
 
 /**
- * Abre uma nova janela para o recibo e envia os dados do pedido,
- * cliente e saldo para ela.
+ * FUNÇÃO SIMPLIFICADA
+ * Apenas abre a janela do recibo, passando o ID do pedido como parâmetro na URL.
  */
 function handlePrintReceipt() {
-    if (!state.currentOrder || !state.currentCustomer || !state.currentBalance || state.currentOrder.isNew) {
+    if (!state.currentOrder || state.currentOrder.isNew) {
         return ui.showMessage('Selecione um pedido salvo para imprimir.', 'error');
     }
 
-    const receiptWindow = window.open('receipt.html', 'Recibo', 'width=640,height=1200,scrollbars=yes');
+    // Abre a janela passando o ID do pedido na URL
+    const url = `receipt.html?orderId=${state.currentOrder.order_id}`;
+    window.open(url, 'Recibo', 'width=320,height=600,scrollbars=yes');
+}
+
+/**
+ * NOVA FUNÇÃO
+ * Lida com a impressão direta (RAW) para uma impressora térmica via WebUSB.
+ */
+async function handleDirectPrint() {
+    if (!state.currentOrder || !state.currentCustomer || state.currentOrder.isNew) {
+        return ui.showMessage('Selecione um pedido salvo para imprimir.', 'error');
+    }
+
+    // Comandos ESC/POS para formatação
+    const ESC = '\x1B';
+    const GS = '\x1D';
+    const CENTER = ESC + 'a' + '\x01';
+    const LEFT = ESC + 'a' + '\x00';
+    const BOLD_ON = ESC + 'E' + '\x01';
+    const BOLD_OFF = ESC + 'E' + '\x00';
+    const CUT_PAPER = GS + 'V' + '\x01';
+    const INITIALIZE = ESC + '@';
+
+    // Monta o texto do recibo
+    let receiptText = INITIALIZE;
+    receiptText += CENTER;
+    receiptText += BOLD_ON + 'Brilho & Cia Lavanderia\n' + BOLD_OFF;
+    receiptText += 'R. Bento de Arruda Camargo, 900\n';
+    receiptText += 'Telefone: (19) 99941-8333\n\n';
+    receiptText += 'Horario de funcionamento:\n';
+    receiptText += 'Seg a Sex 08:00-17:00, Sab 09:00-12:00\n';
+    receiptText += '------------------------------------------\n';
+    receiptText += LEFT;
+    receiptText += `Pedido: ${state.currentOrder.order_id}\n`;
+    receiptText += `Data de Entrada: ${new Date(state.currentOrder.created_at).toLocaleString('pt-BR')}\n`;
+    receiptText += BOLD_ON + `Retirar a partir de: ${state.currentOrder.pickup_datetime ? new Date(state.currentOrder.pickup_datetime).toLocaleString('pt-BR') : 'N/A'}\n\n` + BOLD_OFF;
+    receiptText += BOLD_ON + `Cliente: ${state.currentCustomer.name}\n` + BOLD_OFF;
+    receiptText += `Telefone: ${state.currentCustomer.phone || 'N/A'}\n`;
+    receiptText += '------------------------------------------\n';
+    receiptText += 'Item                Qtd   V.Un.   Total\n';
     
-    // Espera a janela carregar para enviar os dados
-    receiptWindow.onload = () => {
-        receiptWindow.postMessage({ 
-            order: state.currentOrder, 
-            customer: state.currentCustomer,
-            balance: state.currentBalance // Adicionada a informação do saldo
-        }, window.location.origin);
-    };
+    state.currentOrder.items.forEach(item => {
+        const name = item.product_name.padEnd(20, ' ').substring(0, 20);
+        const qty = item.quantity.toString().padEnd(5, ' ');
+        const price = (item.unit_price/100).toFixed(2).toString().padStart(7, ' ');
+        const total = ((item.unit_price * item.quantity)/100).toFixed(2).toString().padStart(7, ' ');
+        receiptText += `${name}${qty}${price}${total}\n`;
+    });
+    
+    receiptText += '------------------------------------------\n';
+    const totalAmount = (state.currentOrder.total_amount / 100).toFixed(2).padStart(38, ' ');
+    receiptText += `TOTAL: ${totalAmount}\n\n`;
+    
+    const paymentStatusText = state.currentOrder.payment_status === 'PAGO' ? 'PAGO' : 'Pagar na Retirada';
+    receiptText += `Status Pagamento: ${paymentStatusText}\n`;
+
+    try {
+        ui.showLoading(true);
+        // Solicita ao usuário para selecionar a impressora USB
+        const device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x04b8 }] }); // 0x04b8 é o vendorId da Epson
+        await device.open();
+        await device.selectConfiguration(1);
+        
+        // Encontra a interface de impressão correta
+        const anInterface = device.configuration.interfaces.find(iface => iface.alternates[0].interfaceClass === 7);
+        const endpoint = anInterface.alternates[0].endpoints.find(ep => ep.direction === 'out');
+        
+        await device.claimInterface(anInterface.interfaceNumber);
+
+        const encoder = new TextEncoder();
+
+        // Envia o texto formatado
+        await device.transferOut(endpoint.endpointNumber, encoder.encode(receiptText));
+        
+        // Comandos para imprimir o código de barras
+        const orderIdBytes = encoder.encode(state.currentOrder.order_id);
+        const barcodeCommands = new Uint8Array([
+            0x1d, 0x68, 60,       // GS h 60  -> Altura do código de barras
+            0x1d, 0x77, 2,        // GS w 2   -> Largura da barra
+            0x1d, 0x6b, 73,       // GS k 73  -> Tipo de código (CODE128)
+            orderIdBytes.length,  // Comprimento do dado
+            ...orderIdBytes,
+            0x0a,                 // New line
+            0x1d, 0x56, 1         // GS V 1   -> Cortar papel
+        ]);
+        
+        // Envia os comandos do código de barras
+        await device.transferOut(endpoint.endpointNumber, barcodeCommands);
+
+        await device.close();
+        ui.showMessage('Impressão enviada com sucesso!', 'success');
+    } catch (error) {
+        console.error('Erro na impressão direta:', error);
+        ui.showMessage(`Erro ao imprimir: ${error.message}`, 'error');
+    } finally {
+        ui.showLoading(false);
+    }
 }
 
 /**

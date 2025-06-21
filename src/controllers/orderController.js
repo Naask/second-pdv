@@ -1,5 +1,7 @@
 // src/controllers/orderController.js
 const orderService = require('../services/orderService');
+const bwipjs = require('bwip-js'); // ADICIONADO: Importa a biblioteca de código de barras
+
 
 async function handleSaveOrder(req, res) {
     try {
@@ -54,10 +56,46 @@ async function handleGetCustomerOrders(req, res) {
     }
 }
 
+/**
+ * NOVA FUNÇÃO
+ * Gera uma imagem PNG de código de barras a partir de um texto.
+ */
+async function handleGenerateBarcode(req, res) {
+    try {
+        const textToEncode = req.params.text;
+
+        // Gera o código de barras como uma imagem PNG
+        bwipjs.toBuffer({
+            bcid: 'code128',       // Tipo do código de barras
+            text: textToEncode,    // Texto a ser codificado
+            scale: 2,              // Escala da imagem
+            height: 5,            // Altura em mm
+            paddingwidth: 5,       // Adiciona um pequeno padding horizontal (em pixels)
+            paddingleft: 5,        // Adiciona um padding à esquerda (zona de silêncio inicial)
+            includetext: true,     // Inclui o texto abaixo do código
+            textxalign: 'center',  // Alinhamento do texto
+            fontsize: 10           // Reduzindo o tamanho da fonte do texto
+        }, (err, png) => {
+            if (err) {
+                console.error("Erro no bwip-js:", err);
+                return res.status(500).json({ message: 'Erro ao gerar código de barras.' });
+            }
+            
+            // Envia a imagem PNG como resposta
+            res.writeHead(200, { 'Content-Type': 'image/png' });
+            res.end(png);
+        });
+
+    } catch (err) {
+        console.error("Erro em handleGenerateBarcode:", err);
+        res.status(500).json({ message: 'Erro interno ao gerar a imagem.' });
+    }
+}
 
 module.exports = {
     handleSaveOrder,
     handleGetOrderDetails,
     handleSearchOrders,
     handleGetCustomerOrders,
+    handleGenerateBarcode, // Verifique se esta linha existe
 };

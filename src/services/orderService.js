@@ -21,6 +21,8 @@ function getOrdersByCustomer(customerId) {
     return db.prepare(sql).all(customerId);
 }
 
+
+
 const saveOrder = db.transaction((orderData) => {
     const { order_id, customer_id, execution_status, pickup_datetime, completed_at, paid_at, items, payments = [] } = orderData;
     
@@ -72,4 +74,4 @@ const saveOrder = db.transaction((orderData) => {
     return getOrderDetails(order_id);
 });
 
-module.exports = { saveOrder, getOrderDetails, searchOrdersById, getOrdersByCustomer };
+module.exports = { saveOrder, getOrderDetails, searchOrdersById, getOrdersByCustomer};
