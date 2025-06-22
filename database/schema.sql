@@ -67,6 +67,15 @@ CREATE TABLE IF NOT EXISTS customer_prices (
     UNIQUE(customer_id, product_id) -- Garante que não haja preços duplicados para o mesmo item/cliente
 );
 
+CREATE TABLE IF NOT EXISTS order_payments (
+    payment_id TEXT PRIMARY KEY,
+    order_id TEXT NOT NULL,
+    method TEXT NOT NULL CHECK(method IN ('SALDO', 'DINHEIRO', 'PIX', 'DEBITO', 'CREDITO')),
+    amount INTEGER NOT NULL,
+    paid_at DATETIME NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders (order_id) ON DELETE CASCADE
+);
+
 -- Índices
 CREATE INDEX IF NOT EXISTS idx_ledger_customer_id ON ledger_transactions (customer_id);
 CREATE INDEX IF NOT EXISTS idx_orders_customer_id ON orders (customer_id);

@@ -2,20 +2,21 @@
 const express = require('express');
 const customerController = require('../controllers/customerController');
 const orderController = require('../controllers/orderController');
-const productController = require('../controllers/productController'); // Importe o productController
+const productController = require('../controllers/productController');
 
 const router = express.Router();
 
-// Rotas de Cliente existentes
+// Rotas de Cliente
 router.post('/', customerController.handleCreateCustomer);
 router.get('/search', customerController.handleSearchCustomers);
 router.get('/:customerId/details', customerController.handleGetCustomerDetails);
 router.patch('/:customerId', customerController.handleUpdateCustomer);
-router.get('/:customerId/orders', orderController.handleGetCustomerOrders);
-router.post('/:customerId/credits', customerController.handleAddCredit);
 router.post('/:customerId/packages', customerController.handleAddPackage);
 
-// NOVAS ROTAS PARA PREÇOS ESPECÍFICOS
+// ROTA CORRETA para buscar os pedidos do cliente
+router.get('/:customerId/orders', orderController.handleGetCustomerOrders);
+
+// Rotas para preços específicos
 router.get('/:customerId/products', productController.handleGetProductsForCustomer);
 router.post('/:customerId/prices', customerController.handleUpdateCustomerPrices);
 

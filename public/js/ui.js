@@ -1,42 +1,53 @@
 // public/js/ui.js
 // Objeto de elementos atualizado com as novas referências de UI
+// OBJETO DE ELEMENTOS COMPLETO E CORRIGIDO
 const elements = {
     loadingOverlay: document.getElementById('loading-overlay'),
     messageContainer: document.getElementById('message-container'),
-    orderIdDisplay: document.getElementById('order-id-display'),
 
-    // Elementos do Cliente
+    // --- Cabeçalho ---
+    orderIdDisplay: document.getElementById('order-id-display'),
     customerSearchInput: document.getElementById('customer-search-input'),
     customerSuggestions: document.getElementById('customer-suggestions'),
     customerNameDisplay: document.getElementById('customer-name-display'),
+    newCustomerBtn: document.getElementById('new-customer-btn'),
     editCustomerBtn: document.getElementById('edit-customer-btn'),
-    viewCustomerOrdersBtn: document.getElementById('view-customer-orders-btn'),
-    headerCustomerBalance: document.getElementById('header-customer-balance'),
     managePricesBtn: document.getElementById('manage-prices-btn'),
+    headerCustomerBalance: document.getElementById('header-customer-balance'),
     addPackageBtn: document.getElementById('add-package-btn'),
+    viewCustomerOrdersBtn: document.getElementById('view-customer-orders-btn'),
 
-    // Elementos do Produto
+    // --- Painel de Produtos ---
     productSearchInput: document.getElementById('product-search-input'),
     categoryPanel: document.getElementById('category-panel'),
     productList: document.getElementById('product-list'),
     productCardTemplate: document.getElementById('product-card-template'),
     
-    // Elementos do Pedido
+    // --- Painel de Pedido ---
     orderItemsTbody: document.getElementById('order-items-tbody'),
     summaryFooter: document.querySelector('.summary-footer'),
+    footerItemCount: document.getElementById('footer-item-count'),
+    footerSubtotal: document.getElementById('footer-subtotal'),
+    footerTotal: document.getElementById('footer-total'),
 
-    // Elementos de Ações e Status
+    // --- Painel de Ações ---
     pickupDatetimeInput: document.getElementById('pickup-datetime-input'),
     completedAtInput: document.getElementById('completed-at-input'),
     paidAtInput: document.getElementById('paid-at-input'),
     executionStatusOptions: document.getElementById('execution-status-options'),
-    paymentMethods: document.getElementById('payment-methods'),
-    paymentBreakdown: document.getElementById('payment-breakdown'),
-    stagedPaymentsList: document.getElementById('staged-payments-list'),
     printReceiptBtn: document.getElementById('print-receipt-btn'),
 
-    // Modais
+    // --- Elementos de Pagamento (Restaurados) ---
+    paymentStatusDisplay: document.getElementById('payment-status-display'),
+    paymentTotalDue: document.getElementById('payment-total-due'),
+    paymentApplied: document.getElementById('payment-applied'),
+    paymentRemaining: document.getElementById('payment-remaining'),
+    paymentMethods: document.getElementById('payment-methods'),
+    stagedPaymentsList: document.getElementById('staged-payments-list'),
+
+    // --- Modais ---
     newCustomerModal: document.getElementById('new-customer-modal'),
+    newCustomerForm: document.getElementById('new-customer-form'),
     customerOrdersModal: document.getElementById('customer-orders-modal'),
     priceManagementModal: document.getElementById('price-management-modal'),
 };
