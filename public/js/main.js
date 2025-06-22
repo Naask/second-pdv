@@ -1,7 +1,6 @@
 import * as api from './api.js';
 import * as ui from './ui.js';
 
-// O 'state' agora armazena a lista de produtos padrão separadamente
 const state = {
     allProducts: [], // Guarda a lista de produtos com preço padrão
     products: [],      // Lista de produtos exibida na tela (pode ter preços de cliente)
@@ -38,8 +37,7 @@ function resetApplication() {
     state.currentOrder = null;
     state.currentBalance = null;
     state.isEditingCustomer = false;
-    // Restaura a lista de produtos para a padrão (com preços normais)
-    state.products = [...state.allProducts]; 
+    state.products = [...state.allProducts]; // Restaura a lista de produtos padrão
     ui.renderProducts(state.products, handleAddProductToOrder);
     ui.resetOrderView(true);
 }
@@ -82,28 +80,25 @@ async function loadOrder(orderId) {
 }
 
 /**
- * Função ATUALIZADA para buscar os preços específicos do cliente ao selecioná-lo.
+ * Busca os detalhes do cliente e a lista de produtos com os preços específicos para ele.
  */
 async function selectCustomer(customerId) {
     ui.clearCustomerSuggestions();
     ui.showLoading(true);
     try {
-        // Busca os detalhes e o saldo do cliente
         const customerDetails = await api.getCustomerDetails(customerId);
-        // Busca a lista de produtos COM OS PREÇOS específicos para este cliente
         const productsData = await api.getProductsForCustomer(customerId);
 
         state.currentCustomer = customerDetails.details;
         state.currentBalance = customerDetails.balance;
-        state.products = productsData.products; // Atualiza o state com os preços do cliente
+        state.products = productsData.products; // Atualiza com os preços do cliente
         state.currentOrder = null;
 
         ui.renderCustomerInfo(state.currentCustomer, state.currentBalance);
-        ui.renderProducts(state.products, handleAddProductToOrder); // Re-renderiza a lista de produtos
+        ui.renderProducts(state.products, handleAddProductToOrder);
         ui.resetOrderView(false);
     } catch (error) {
         ui.showMessage(error.message, 'error');
-        // Em caso de erro, volta para a lista de produtos padrão
         state.products = [...state.allProducts];
         ui.renderProducts(state.products, handleAddProductToOrder);
     } finally {
@@ -314,6 +309,8 @@ async function handleSaveOrder() {
 
 async function handleViewCustomerOrders() {
     if (!state.currentCustomer) return;
+    console.log("--- Click no botão> handleViewCsut ---");
+ 
     ui.showLoading(true);
     try {
         const orders = await api.getOrdersByCustomer(state.currentCustomer.customer_id);
@@ -336,7 +333,6 @@ function handleEditCustomerClick() {
 }
 
 /**
- * NOVA FUNÇÃO
  * Filtra a lista de produtos exibida na tela com base no texto digitado.
  */
 function handleProductSearch(event) {
@@ -355,27 +351,23 @@ function handleProductSearch(event) {
 }
 
 /**
- * NOVA FUNÇÃO
  * Lida com o clique no botão "Gerenciar Preços".
  */
 async function handleManagePricesClick() {
     if (!state.currentCustomer) return;
     ui.showLoading(true);
     try {
-        // Precisamos da lista de produtos com preço padrão (allProducts) e
-        // a lista com os preços já customizados para o cliente (customerProducts).
         const customerProductsData = await api.getProductsForCustomer(state.currentCustomer.customer_id);
         
         ui.renderPriceManagementModal(state.currentCustomer, state.allProducts, customerProductsData.products);
     } catch (error) {
-        ui.showMessage("Erro ao carregar dados para gerenciar preços.", "error");
+        ui.showMessage("Erro ao carregar dados para gerenciar preços: " + error.message, "error");
     } finally {
         ui.showLoading(false);
     }
 }
 
 /**
- * NOVA FUNÇÃO
  * Salva a tabela de preços especiais do cliente.
  */
 async function handleSavePrices() {
@@ -385,7 +377,6 @@ async function handleSavePrices() {
     const pricesToSave = [];
     
     priceInputs.forEach(input => {
-        // Converte o valor para centavos. Se o campo estiver vazio, envia null.
         const priceValue = input.value.trim();
         const priceInCents = priceValue ? Math.round(parseFloat(priceValue.replace(',', '.')) * 100) : null;
 
@@ -400,7 +391,6 @@ async function handleSavePrices() {
         await api.saveCustomerPrices(state.currentCustomer.customer_id, pricesToSave);
         ui.showMessage("Tabela de preços atualizada com sucesso!");
         ui.toggleModal('price-management-modal', false);
-        // Recarrega os dados do cliente para atualizar a lista de produtos na tela principal
         await selectCustomer(state.currentCustomer.customer_id);
     } catch (error) {
         ui.showMessage(error.message, "error");
@@ -410,51 +400,37 @@ async function handleSavePrices() {
 }
 
 /**
- * Abre a janela do recibo e usa uma verificação ativa (polling) para
- * garantir que a janela esteja pronta antes de chamar a função de impressão.
+ * Abre a janela do recibo e usa uma verificação ativa para garantir que ela esteja pronta.
  */
 function handlePrintReceipt() {
-    // Validação inicial para garantir que temos dados para imprimir
     if (!state.currentOrder || !state.currentCustomer || !state.currentBalance || state.currentOrder.isNew) {
         return ui.showMessage('Selecione um pedido salvo para imprimir.', 'error');
     }
 
-    // Abre a janela pop-up do recibo
     const receiptWindow = window.open('receipt.html', 'Recibo', 'width=320,height=600,scrollbars=yes');
 
-    // Verifica se o pop-up não foi bloqueado pelo navegador
     if (!receiptWindow) {
         alert('Seu navegador bloqueou a janela de impressão. Por favor, habilite os pop-ups para este site.');
         return;
     }
 
-    // Inicia a verificação ativa (polling) para garantir que a janela filha esteja pronta
-    const maxTries = 20; // Tenta por no máximo 2 segundos
+    const maxTries = 20;
     let tries = 0;
     const interval = setInterval(() => {
         if (receiptWindow.closed) {
             clearInterval(interval);
             return;
         }
-
         tries++;
-
-        // VERIFICAÇÃO: A função 'printReceipt' já existe na janela do recibo?
         if (typeof receiptWindow.printReceipt === 'function') {
-            // SUCESSO: A janela está pronta!
-            clearInterval(interval); // Para de verificar
-
-            // Chama a função de impressão na janela filha, passando os dados
+            clearInterval(interval);
             receiptWindow.printReceipt(state.currentOrder, state.currentCustomer, state.currentBalance);
-
         } else if (tries > maxTries) {
-            // FALHA: Excedeu o tempo limite de espera
             clearInterval(interval);
             alert('Não foi possível se comunicar com a janela de impressão. Por favor, tente novamente.');
         }
-    }, 100); // Verifica a cada 100 milissegundos
+    }, 100);
 }
-
 
 async function init() {
     console.log("Inicializando PDV...");
@@ -497,7 +473,6 @@ async function init() {
         }
     });
 
-    // Listener para a nova busca de produtos
     document.getElementById('product-search-input').addEventListener('input', handleProductSearch);
 
     document.getElementById('new-order-btn').addEventListener('click', resetApplication);
@@ -516,14 +491,13 @@ async function init() {
         document.getElementById('add-package-form').reset();
         ui.toggleModal('add-package-modal', true);
     });
-
-    // Listener para o novo botão "Gerenciar Preços"
+    
     document.getElementById('manage-prices-btn').addEventListener('click', handleManagePricesClick);
-
-    // Listeners para os Modais
+    
     document.getElementById('new-customer-form').addEventListener('submit', handleCustomerSubmit);
     document.getElementById('add-package-form').addEventListener('submit', handleAddPackageSubmit);
     document.getElementById('save-prices-btn').addEventListener('click', handleSavePrices);
+    
     document.getElementById('new-customer-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('new-customer-modal', false));
     document.getElementById('customer-orders-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('customer-orders-modal', false));
     document.getElementById('add-package-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('add-package-modal', false));
@@ -532,18 +506,26 @@ async function init() {
     document.getElementById('execution-status-options').addEventListener('click', (e) => { if (e.target.classList.contains('option-button')) handleStatusChange('execution', e.target.dataset.status); });
     document.getElementById('payment-methods').addEventListener('click', (e) => { if (e.target.classList.contains('option-button') && !e.target.disabled) { handleAddPayment(e.target.dataset.method); } });
     document.getElementById('staged-payments-list').addEventListener('click', (e) => { if (e.target.classList.contains('remove-payment-btn')) { handleRemoveStagedPayment(e.target.dataset.paymentId); } });
+    
     document.getElementById('pickup-datetime-input').addEventListener('input', (e) => { if (state.currentOrder) state.currentOrder.pickup_datetime = e.target.value; });
     document.getElementById('completed-at-input').addEventListener('input', (e) => { if (state.currentOrder) state.currentOrder.completed_at = e.target.value; });
     document.getElementById('paid-at-input').addEventListener('input', (e) => { if (state.currentOrder) state.currentOrder.paid_at = e.target.value; });
 
-    // Carregamento inicial de dados
     ui.showLoading(true);
     try {
         const initialData = await api.getInitialData();
-        state.allProducts = initialData.products; // Guarda a lista original
-        state.products = [...state.allProducts];    // A lista a ser exibida começa como a original
+        state.allProducts = initialData.products;
+        state.products = [...state.allProducts];
         state.categories = initialData.categories;
-        ui.renderCategories(state.categories, (category) => ui.filterProducts(category));
+        ui.renderCategories(state.categories, (category) => {
+            document.getElementById('product-search-input').value = '';
+            if (category === 'TODAS') {
+                ui.renderProducts(state.products, handleAddProductToOrder);
+            } else {
+                const filtered = state.products.filter(p => p.category === category);
+                ui.renderProducts(filtered, handleAddProductToOrder);
+            }
+        });
         ui.renderProducts(state.products, handleAddProductToOrder);
     } catch (error) {
         ui.showMessage(error.message, 'error');
@@ -554,5 +536,5 @@ async function init() {
     resetApplication();
 }
 
-// O listener para handlePrintReceipt foi removido daqui e colocado em init para consistência
+
 document.addEventListener('DOMContentLoaded', init);

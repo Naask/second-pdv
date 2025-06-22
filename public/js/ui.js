@@ -211,26 +211,27 @@ export function renderOrder(order, balance, callbacks) {
 
 export function renderCustomerInfo(customer, balance) {
     if (customer) {
+        // --- SE UM CLIENTE ESTÁ SELECIONADO ---
         elements.customerNameDisplay.textContent = customer.name;
-        // Atualiza o novo display de saldo no cabeçalho
         elements.headerCustomerBalance.textContent = `Saldo: ${formatCurrency(balance.totalBalance)}`;
-        elements.headerCustomerBalance.style.display = 'inline-block'; // Garante que ele seja visível
+        elements.headerCustomerBalance.style.display = 'inline-block';
         
-        // Habilita os botões de ação do cliente que agora estão no cabeçalho
+        // Habilita todos os botões relacionados ao cliente
         elements.viewCustomerOrdersBtn.disabled = false;
         elements.editCustomerBtn.disabled = false;
-        // O botão de pacote pode ter sido removido do header para simplificar, mas se existir, habilite-o
-        if (elements.addPackageBtn) elements.addPackageBtn.disabled = false;
+        elements.addPackageBtn.disabled = false;
+        elements.managePricesBtn.disabled = false; // <-- O BOTÃO É HABILITADO AQUI
 
     } else {
+        // --- SE NENHUM CLIENTE ESTÁ SELECIONADO ---
         elements.customerNameDisplay.textContent = 'Nenhum';
-        // Esconde o display de saldo se nenhum cliente estiver selecionado
         elements.headerCustomerBalance.style.display = 'none';
-
-        // Desabilita os botões de ação do cliente
+        
+        // Desabilita todos os botões relacionados ao cliente
         elements.viewCustomerOrdersBtn.disabled = true;
         elements.editCustomerBtn.disabled = true;
-        if (elements.addPackageBtn) elements.addPackageBtn.disabled = true;
+        elements.addPackageBtn.disabled = true;
+        elements.managePricesBtn.disabled = true; // <-- O BOTÃO É DESABILITADO AQUI
     }
 }
 
@@ -305,6 +306,54 @@ export function renderCustomerOrdersModal(customer, orders, onSelect) {
         });
     }
     toggleModal('customer-orders-modal', true);
+}
+
+/**
+ * NOVA FUNÇÃO
+ * Renderiza o modal de gerenciamento de preços para um cliente.
+ * @param {object} customer - O objeto do cliente.
+ * @param {Array} allProducts - Array com todos os produtos do sistema e seus preços padrão.
+ * @param {Array} customerProducts - Array com os produtos e os preços específicos do cliente.
+ */
+export function renderPriceManagementModal(customer, allProducts, customerProducts) {
+    // Seleciona os elementos do modal de preços
+    const modal = document.getElementById('price-management-modal');
+    if (!modal) return; // Segurança caso o modal não exista
+
+    modal.querySelector('#modal-price-customer-name').textContent = customer.name;
+    const tbody = modal.querySelector('#customer-prices-tbody');
+    tbody.innerHTML = '';
+
+    // Cria um mapa de preços especiais para busca rápida (ID do produto -> preço especial)
+    const priceMap = new Map(customerProducts.map(p => [p.product_id, p.price]));
+
+    // Para cada produto padrão no sistema...
+    allProducts.forEach(product => {
+        // Verifica se o cliente tem um preço especial para este produto
+        const specialPrice = priceMap.get(product.product_id);
+        
+        // Verifica se o preço especial é diferente do preço padrão
+        const isPriceSpecial = specialPrice !== undefined && specialPrice !== product.price;
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${product.name}</td>
+            <td>${formatCurrency(product.price)}</td>
+            <td>
+                <input 
+                    type="number" 
+                    class="special-price-input ${isPriceSpecial ? 'has-special-price' : ''}" 
+                    data-product-id="${product.product_id}"
+                    placeholder="Padrão"
+                    value="${isPriceSpecial ? (specialPrice / 100).toFixed(2) : ''}"
+                    step="0.01"
+                >
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    toggleModal('price-management-modal', true);
 }
 
 export function resetOrderView(clearCustomer = true) {
