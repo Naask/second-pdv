@@ -11,16 +11,31 @@
     <div id="message-container"></div>
 
     <header class="main-header">
-        <div class="header-group" id="customer-actions-group">
-             <span>Cliente:</span>
-             <div class="search-container">
-                 <input type="text" id="customer-search-input" class="header-input" placeholder="Buscar Cliente...">
-                 <div id="customer-suggestions" class="suggestions hidden"></div>
-             </div>
-             <span id="customer-name-display">Nenhum</span>
-             <button id="new-customer-btn" class="header-btn">Novo</button>
-             <button id="edit-customer-btn" class="header-btn" disabled>Editar</button>
-             <button id="manage-prices-btn" class="header-btn" disabled>Gerenciar Preços</button> </div>
+        <div class="header-group order-info">
+            <span id="order-id-display">Pedido #NOVO</span>
+            <div class="search-container">
+                <input type="text" id="order-search-input" class="header-input" placeholder="Buscar Pedido...">
+                <div id="order-suggestions" class="suggestions hidden"></div>
+            </div>
+        </div>
+        
+        <div class="header-group client-actions">
+            <span>Cliente:</span>
+            <div class="search-container">
+                <input type="text" id="customer-search-input" class="header-input" placeholder="Buscar Cliente...">
+                <div id="customer-suggestions" class="suggestions hidden"></div>
+            </div>
+            <span id="customer-name-display">Nenhum</span>
+
+            <button id="new-customer-btn" class="header-btn">Novo</button>
+            <button id="edit-customer-btn" class="header-btn" disabled>Editar</button>
+            <button id="manage-prices-btn" class="header-btn" disabled>Gerenciar Preços</button>
+            
+            <div id="header-customer-balance" class="customer-balance-display">Saldo: R$ 0,00</div>
+            
+            <button id="add-package-btn" class="header-btn" disabled>+ Pacote</button>
+            <button id="view-customer-orders-btn" class="header-btn" disabled>Ver Pedidos</button>
+        </div>
     </header>
 
     <main class="main-content">
@@ -28,11 +43,144 @@
             <div class="product-search-bar">
                 <input type="text" id="product-search-input" placeholder="Buscar produto por nome...">
             </div>
-            <div id="category-panel" class="panel-section"></div>
-            <div id="product-list" class="panel-section scrollable"></div>
+            <div id="category-panel"></div>
+            <div id="product-list" class="scrollable"></div>
         </section>
-        </main>
 
+        <section id="order-pane" class="panel">
+            <div class="order-items-header"><h3>Itens do Pedido</h3></div>
+            <div id="order-items-container" class="scrollable">
+                <table id="order-items-table">
+                    <thead><tr><th>Qtd.</th><th>Produto</th><th>V. Un.</th><th>Subtotal</th><th></th></tr></thead>
+                    <tbody id="order-items-tbody"></tbody>
+                </table>
+            </div>
+            <footer class="summary-footer">
+                <span id="footer-item-count">ITENS: 0</span>
+                <span id="footer-subtotal">SUBTOTAL: R$ 0,00</span>
+                <span id="footer-total">TOTAL: R$ 0,00</span>
+            </footer>
+        </section>
+
+        <aside id="actions-pane" class="panel">
+            <div class="form-group">
+                <label for="pickup-datetime-input">Pronto para Retirada:</label>
+                <input type="datetime-local" id="pickup-datetime-input">
+            </div>
+            
+            <h4>Status do Serviço</h4>
+            <div id="execution-status-options" class="options-group">
+                <button class="option-button" data-status="EM_EXECUCAO">EM EXECUÇÃO</button>
+                <button class="option-button" data-status="AGUARDANDO_RETIRADA">AG. RETIRADA</button>
+                <button class="option-button" data-status="AGUARDANDO_ENTREGA">AG. ENTREGA</button>
+                <button class="option-button" data-status="CONCLUIDO">CONCLUÍDO</button>
+            </div>
+            
+            <div class="form-group">
+                <label for="completed-at-input">Data de Conclusão:</label>
+                <input type="datetime-local" id="completed-at-input">
+            </div>
+            
+            <h4>Pagamento</h4>
+            <div id="payment-info-display" class="payment-info">
+                <span>Status: <strong id="payment-status-display">AGUARDANDO</strong></span>
+            </div>
+            <div id="payment-breakdown">
+                 <p>Total do Pedido: <strong id="payment-total-due">R$ 0,00</strong></p>
+                 <p>Pagamentos Aplicados: <strong id="payment-applied">R$ 0,00</strong></p>
+                 <p class="payment-due">Restante a Pagar: <strong id="payment-remaining">R$ 0,00</strong></p>
+            </div>
+            <div id="payment-methods" class="options-group">
+                <button class="option-button" data-method="SALDO">Usar Saldo</button>
+                <button class="option-button" data-method="DINHEIRO">Dinheiro</button>
+                <button class="option-button" data-method="PIX">Pix</button>
+                <button class="option-button" data-method="DEBITO">Débito</button>
+                <button class="option-button" data-method="CREDITO">Crédito</button>
+            </div>
+            <ul id="staged-payments-list"></ul>
+
+            <div class="form-group">
+                <label for="paid-at-input">Data de Pagamento:</label>
+                <input type="datetime-local" id="paid-at-input">
+            </div>
+            
+            <div class="main-actions">
+                <button id="save-order-btn" class="action-btn save">💾 Salvar</button>
+                <button id="print-receipt-btn" class="action-btn-secondary" disabled>📄 Imprimir</button>
+                <button id="new-order-btn" class="action-btn new">✨ Limpar</button>
+            </div>
+        </aside>
+    </main>
+    
+    <template id="product-card-template">
+        <div class="product-card">
+            <span class="product-name"></span>
+            <span class="product-price"></span>
+        </div>
+    </template>
+    
+    <div id="new-customer-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Novo Cliente</h2>
+            <form id="new-customer-form">
+                <div class="form-group">
+                    <label for="new-name">Nome *</label>
+                    <input type="text" id="new-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-phone">Telefone</label>
+                    <input type="tel" id="new-phone">
+                </div>
+                <div class="form-group">
+                    <label for="new-email">Email</label>
+                    <input type="email" id="new-email">
+                </div>
+                <div class="form-group">
+                    <label for="new-address">Endereço</label>
+                    <input type="text" id="new-address">
+                </div>
+                <button type="submit" class="button-primary">Salvar Cliente</button>
+            </form>
+        </div>
+    </div>
+    <div id="customer-orders-modal" class="modal hidden">
+        <div class="modal-content large">
+            <span class="close-button">&times;</span>
+            <h2>Pedidos de <span id="modal-customer-name"></span></h2>
+            <div class="table-container">
+                <table id="customer-orders-table">
+                    <thead>
+                        <tr>
+                            <th>Pedido #</th>
+                            <th>Data</th>
+                            <th>Status Serviço</th>
+                            <th>Status Pagto.</th>
+                            <th>Valor Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customer-orders-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div id="add-package-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Comprar Pacote Pré-Pago</h2>
+            <form id="add-package-form">
+                <div class="form-group">
+                    <label for="package-paid-amount">Valor Pago (em centavos)</label>
+                    <input type="number" id="package-paid-amount" required min="1">
+                </div>
+                <div class="form-group">
+                    <label for="package-bonus-amount">Valor do Bônus (em centavos)</label>
+                    <input type="number" id="package-bonus-amount" required min="0">
+                </div>
+                <button type="submit" class="button-primary">Comprar Pacote</button>
+            </form>
+        </div>
+    </div>
     <div id="price-management-modal" class="modal hidden">
         <div class="modal-content large">
             <span class="close-button">&times;</span>
@@ -43,7 +191,7 @@
                         <tr>
                             <th>Produto</th>
                             <th>Preço Padrão</th>
-                            <th>Preço Especial (em centavos)</th>
+                            <th>Preço Especial (em Reais)</th>
                         </tr>
                     </thead>
                     <tbody id="customer-prices-tbody"></tbody>
