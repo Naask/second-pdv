@@ -27,6 +27,21 @@ async function handleGetInitialData(req, res) {
     }
 }
 
+/**
+ * NOVA FUNÇÃO
+ * Lida com a requisição para obter produtos com preços específicos para um cliente.
+ */
+async function handleGetProductsForCustomer(req, res) {
+    try {
+        const { customerId } = req.params;
+        const products = productService.getProductsForCustomer(customerId);
+        res.status(200).json({ products });
+    } catch (err) {
+        console.error('Erro no handleGetProductsForCustomer:', err);
+        res.status(500).json({ message: 'Erro interno no servidor ao buscar produtos do cliente.' });
+    }
+}
+
 module.exports = {
-    handleGetInitialData,
+    handleGetInitialData, handleGetProductsForCustomer,
 };

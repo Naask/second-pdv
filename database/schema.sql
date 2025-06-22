@@ -56,6 +56,17 @@ CREATE TABLE IF NOT EXISTS ledger_transactions (
     FOREIGN KEY (customer_id) REFERENCES customers (customer_id)
 );
 
+/* Adicionado para suportar preços específicos por cliente */
+CREATE TABLE IF NOT EXISTS customer_prices (
+    customer_price_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL,
+    product_id INTEGER NOT NULL,
+    price INTEGER NOT NULL, -- O preço especial do produto para este cliente
+    FOREIGN KEY (customer_id) REFERENCES customers (customer_id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products (product_id) ON DELETE CASCADE,
+    UNIQUE(customer_id, product_id) -- Garante que não haja preços duplicados para o mesmo item/cliente
+);
+
 -- Índices
 CREATE INDEX IF NOT EXISTS idx_ledger_customer_id ON ledger_transactions (customer_id);
 CREATE INDEX IF NOT EXISTS idx_orders_customer_id ON orders (customer_id);

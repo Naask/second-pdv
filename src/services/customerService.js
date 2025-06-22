@@ -44,6 +44,26 @@ function addPackageToCustomer(customerId, { paidAmount, bonusAmount }) {
     return ledgerService.addPrepaidPackage({ customerId, paidAmount, bonusAmount });
 }
 
+/**
+ * NOVA FUNÇÃO
+ * Atualiza a tabela de preços de um cliente.
+ */
+const updateCustomerPrices = db.transaction((customerId, prices) => {
+    // 1. Apaga todos os preços antigos daquele cliente
+    db.prepare("DELETE FROM customer_prices WHERE customer_id = ?").run(customerId);
+
+    // 2. Insere os novos preços especiais que foram enviados
+    const insertStmt = db.prepare("INSERT INTO customer_prices (customer_id, product_id, price) VALUES (?, ?, ?)");
+    for (const priceEntry of prices) {
+        // Apenas insere se um preço foi de fato fornecido
+        if (priceEntry.price !== null && priceEntry.price !== '') {
+            insertStmt.run(customerId, priceEntry.product_id, priceEntry.price);
+        }
+    }
+    return { success: true, message: 'Tabela de preços atualizada.' };
+});
+
+
 module.exports = {
     findCustomersByName,
     getCustomerDetailsById,
@@ -51,4 +71,5 @@ module.exports = {
     updateCustomer,
     addCreditToCustomer,
     addPackageToCustomer,
+    updateCustomerPrices,
 };

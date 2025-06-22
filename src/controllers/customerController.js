@@ -88,6 +88,25 @@ async function handleAddPackage(req, res) {
     }
 }
 
+/**
+ * NOVA FUNÇÃO
+ * Lida com a requisição para salvar a tabela de preços de um cliente.
+ */
+async function handleUpdateCustomerPrices(req, res) {
+    try {
+        const { customerId } = req.params;
+        const prices = req.body.prices; // Espera um array de { product_id, price }
+        if (!Array.isArray(prices)) {
+            return res.status(400).json({ message: 'Formato de dados de preços inválido.' });
+        }
+        customerService.updateCustomerPrices(customerId, prices);
+        res.status(200).json({ message: 'Preços atualizados com sucesso.' });
+    } catch (err) {
+        console.error("Erro em handleUpdateCustomerPrices:", err);
+        res.status(500).json({ message: 'Erro interno ao atualizar preços.' });
+    }
+}
+
 // CORREÇÃO: Adicionamos as duas funções que faltavam ao objeto de exportação.
 module.exports = {
     handleCreateCustomer,
@@ -96,4 +115,5 @@ module.exports = {
     handleUpdateCustomer,
     handleAddCredit,
     handleAddPackage,
+    handleUpdateCustomerPrices,
 };
