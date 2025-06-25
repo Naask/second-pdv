@@ -351,7 +351,8 @@ function handleProductSearch(event) {
 }
 
 /**
- * Lida com o clique no botão "Gerenciar Preços".
+ * FUNÇÃO ATUALIZADA E SIMPLIFICADA
+ * Lida com o clique no botão "Gerenciar Preços", agora apenas com ordenação.
  */
 async function handleManagePricesClick() {
     if (!state.currentCustomer) return;
@@ -359,7 +360,14 @@ async function handleManagePricesClick() {
     try {
         const customerProductsData = await api.getProductsForCustomer(state.currentCustomer.customer_id);
         
-        ui.renderPriceManagementModal(state.currentCustomer, state.allProducts, customerProductsData.products);
+        // Ordena a lista de produtos padrão alfabeticamente
+        const sortedProducts = [...state.allProducts].sort((a, b) => a.name.localeCompare(b.name));
+
+        // Chama a função da UI para montar o modal com a lista já ordenada
+        ui.renderPriceManagementModal(state.currentCustomer, sortedProducts, customerProductsData.products);
+
+        // A lógica do event listener para o filtro foi removida
+
     } catch (error) {
         ui.showMessage("Erro ao carregar dados para gerenciar preços: " + error.message, "error");
     } finally {

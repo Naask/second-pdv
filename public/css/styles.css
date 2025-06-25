@@ -251,6 +251,15 @@ button {
 .option-button.selected[data-status="CONCLUIDO"] { background-color: var(--color-success); color: white; border-color: var(--color-success); }
 
 /* Modais */
+.table-container {
+    max-height: 60vh; /* Define a altura máxima como 60% da altura da tela */
+    overflow-y: auto; /* Adiciona uma barra de rolagem vertical somente quando necessário */
+    margin-top: 1em;
+    margin-bottom: 1em;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+}
+
 .modal { position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all var(--transition-speed); }
 .modal:not(.hidden) { opacity: 1; visibility: visible; }
 .modal-content { background-color: var(--color-surface); padding: 2rem; border-radius: var(--border-radius); width: 90%; max-width: 500px; box-shadow: var(--box-shadow); transition: all var(--transition-speed); transform: translateY(-20px); }

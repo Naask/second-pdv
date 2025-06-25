@@ -308,31 +308,26 @@ export function renderCustomerOrdersModal(customer, orders, onSelect) {
     toggleModal('customer-orders-modal', true);
 }
 
+
+
+
 /**
- * NOVA FUNÇÃO
+ * FUNÇÃO ATUALIZADA E SIMPLIFICADA
  * Renderiza o modal de gerenciamento de preços para um cliente.
- * @param {object} customer - O objeto do cliente.
- * @param {Array} allProducts - Array com todos os produtos do sistema e seus preços padrão.
- * @param {Array} customerProducts - Array com os produtos e os preços específicos do cliente.
  */
-export function renderPriceManagementModal(customer, allProducts, customerProducts) {
-    // Seleciona os elementos do modal de preços
+export function renderPriceManagementModal(customer, sortedProducts, customerProducts) {
     const modal = document.getElementById('price-management-modal');
-    if (!modal) return; // Segurança caso o modal não exista
+    if (!modal) return;
 
     modal.querySelector('#modal-price-customer-name').textContent = customer.name;
     const tbody = modal.querySelector('#customer-prices-tbody');
     tbody.innerHTML = '';
 
-    // Cria um mapa de preços especiais para busca rápida (ID do produto -> preço especial)
-    const priceMap = new Map(customerProducts.map(p => [p.product_id, p.price]));
+    const customerPriceMap = new Map(customerProducts.map(p => [p.product_id, p.price]));
 
-    // Para cada produto padrão no sistema...
-    allProducts.forEach(product => {
-        // Verifica se o cliente tem um preço especial para este produto
-        const specialPrice = priceMap.get(product.product_id);
-        
-        // Verifica se o preço especial é diferente do preço padrão
+    // A lógica de renderização agora está toda aqui dentro
+    sortedProducts.forEach(product => {
+        const specialPrice = customerPriceMap.get(product.product_id);
         const isPriceSpecial = specialPrice !== undefined && specialPrice !== product.price;
 
         const row = document.createElement('tr');
@@ -352,9 +347,10 @@ export function renderPriceManagementModal(customer, allProducts, customerProduc
         `;
         tbody.appendChild(row);
     });
-
+    
     toggleModal('price-management-modal', true);
 }
+
 
 export function resetOrderView(clearCustomer = true) {
     elements.orderIdDisplay.textContent = 'Pedido #NOVO';
