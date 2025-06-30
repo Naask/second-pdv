@@ -440,9 +440,39 @@ function handlePrintReceipt() {
     }, 100);
 }
 
+/**
+ * NOVA FUNÇÃO
+ * Lida com o clique no botão "Editar Datas".
+ */
+function handleEditDatesClick() {
+    if (state.currentOrder) {
+        console.log("Calling RenderDatesModal")
+        ui.renderDatesModal(state.currentOrder);
+    }
+}
+
+/**
+ * NOVA FUNÇÃO
+ * Salva as datas do modal de volta para o objeto 'state'.
+ */
+function handleSaveDates(event) {
+    event.preventDefault(); // Impede o envio do formulário
+    if (!state.currentOrder) return;
+
+    const modal = document.getElementById('edit-dates-modal');
+    // Atualiza o 'state' com os novos valores dos inputs do modal
+    state.currentOrder.created_at = modal.querySelector('#modal-created-at').value;
+    state.currentOrder.completed_at = modal.querySelector('#modal-completed-at').value;
+    state.currentOrder.paid_at = modal.querySelector('#modal-paid-at').value;
+
+    ui.showMessage("Datas atualizadas na memória. Salve o pedido para persistir.", "info");
+    ui.toggleModal('edit-dates-modal', false);
+}
+
 async function init() {
     console.log("Inicializando PDV...");
     
+    // Listener para busca de clientes
     document.getElementById('customer-search-input').addEventListener('input', (e) => {
         clearTimeout(state.debounceTimer);
         setTimeout(async () => {
@@ -458,6 +488,7 @@ async function init() {
         }, 300);
     });
 
+    // Listener para busca de pedidos
     const orderSearchInput = document.getElementById('order-search-input');
     orderSearchInput.addEventListener('input', (e) => {
         clearTimeout(state.debounceTimer);
@@ -468,7 +499,8 @@ async function init() {
                 const orders = await api.searchOrders(searchTerm);
                 ui.renderOrderSuggestions(orders, (selectedOrderId) => {
                     loadOrder(selectedOrderId);
-                    ui.clearOrderSuggestions();
+                    // Esconde as sugestões após a seleção
+                    ui.clearOrderSuggestions(); 
                 });
             } catch (error) { ui.showMessage(error.message, 'error'); }
         }, 300);
@@ -476,13 +508,28 @@ async function init() {
     orderSearchInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            ui.clearOrderSuggestions();
+            // Garante que as sugestões sejam limpas ao pressionar Enter
+            ui.clearOrderSuggestions(); 
             loadOrder(orderSearchInput.value.trim().toUpperCase());
         }
     });
 
+    // Listener global para fechar as sugestões ao clicar fora
+    window.addEventListener('click', (e) => {
+    // CORRIGIDO: Usa a classe '.client-actions' para encontrar o contêiner
+    const customerSearchContainer = document.querySelector('.client-actions .search-container');
+    if (customerSearchContainer && !customerSearchContainer.contains(e.target)) {
+    ui.clearCustomerSuggestions();
+    }
+    const orderSearchContainer = document.querySelector('.order-info .search-container');
+    if (orderSearchContainer && !orderSearchContainer.contains(e.target)) {
+    ui.clearOrderSuggestions();
+    }
+    });
+    
     document.getElementById('product-search-input').addEventListener('input', handleProductSearch);
 
+    // ... (resto dos listeners para botões e modais, sem alterações) ...
     document.getElementById('new-order-btn').addEventListener('click', resetApplication);
     document.getElementById('save-order-btn').addEventListener('click', handleSaveOrder);
     document.getElementById('print-receipt-btn').addEventListener('click', handlePrintReceipt);
@@ -500,12 +547,10 @@ async function init() {
         ui.toggleModal('add-package-modal', true);
     });
     
-    document.getElementById('manage-prices-btn').addEventListener('click', handleManagePricesClick);
-    
+   document.getElementById('manage-prices-btn').addEventListener('click', handleManagePricesClick);
     document.getElementById('new-customer-form').addEventListener('submit', handleCustomerSubmit);
     document.getElementById('add-package-form').addEventListener('submit', handleAddPackageSubmit);
     document.getElementById('save-prices-btn').addEventListener('click', handleSavePrices);
-    
     document.getElementById('new-customer-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('new-customer-modal', false));
     document.getElementById('customer-orders-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('customer-orders-modal', false));
     document.getElementById('add-package-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('add-package-modal', false));
@@ -516,9 +561,16 @@ async function init() {
     document.getElementById('staged-payments-list').addEventListener('click', (e) => { if (e.target.classList.contains('remove-payment-btn')) { handleRemoveStagedPayment(e.target.dataset.paymentId); } });
     
     document.getElementById('pickup-datetime-input').addEventListener('input', (e) => { if (state.currentOrder) state.currentOrder.pickup_datetime = e.target.value; });
-    document.getElementById('completed-at-input').addEventListener('input', (e) => { if (state.currentOrder) state.currentOrder.completed_at = e.target.value; });
-    document.getElementById('paid-at-input').addEventListener('input', (e) => { if (state.currentOrder) state.currentOrder.paid_at = e.target.value; });
+ 
+    // Listener para o novo botão "Editar Datas"
+    document.getElementById('edit-dates-btn').addEventListener('click', handleEditDatesClick);
 
+    // Listener para o formulário do novo modal de datas
+   document.getElementById('edit-dates-form').addEventListener('submit', handleSaveDates);
+    document.getElementById('edit-dates-modal').querySelector('.close-button').addEventListener('click', () => ui.toggleModal('edit-dates-modal', false));
+
+
+    // Carregamento inicial de dados
     ui.showLoading(true);
     try {
         const initialData = await api.getInitialData();
@@ -527,6 +579,7 @@ async function init() {
         state.categories = initialData.categories;
         ui.renderCategories(state.categories, (category) => {
             document.getElementById('product-search-input').value = '';
+            const sourceList = state.currentCustomer ? state.products : state.allProducts;
             if (category === 'TODAS') {
                 ui.renderProducts(state.products, handleAddProductToOrder);
             } else {
@@ -543,6 +596,5 @@ async function init() {
     
     resetApplication();
 }
-
 
 document.addEventListener('DOMContentLoaded', init);

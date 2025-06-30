@@ -32,10 +32,9 @@ const elements = {
 
     // --- Painel de Ações ---
     pickupDatetimeInput: document.getElementById('pickup-datetime-input'),
-    completedAtInput: document.getElementById('completed-at-input'),
-    paidAtInput: document.getElementById('paid-at-input'),
     executionStatusOptions: document.getElementById('execution-status-options'),
     printReceiptBtn: document.getElementById('print-receipt-btn'),
+    editDatesBtn: document.getElementById('edit-dates-btn'),
 
     // --- Elementos de Pagamento (Restaurados) ---
     paymentStatusDisplay: document.getElementById('payment-status-display'),
@@ -50,6 +49,7 @@ const elements = {
     newCustomerForm: document.getElementById('new-customer-form'),
     customerOrdersModal: document.getElementById('customer-orders-modal'),
     priceManagementModal: document.getElementById('price-management-modal'),
+    editDatesModal: document.getElementById('edit-dates-modal'),
 };
 
 export const formatCurrency = (amountInCents) => (amountInCents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -186,25 +186,32 @@ export function renderOrder(order, balance, callbacks) {
         return;
     }
     elements.orderIdDisplay.textContent = order.isNew ? 'Pedido #NOVO' : `Pedido #${order.order_id}`;
-    // Habilita ou desabilita o botão de impressão
-    elements.printReceiptBtn.disabled = !!order.isNew; // Desabilitado se o pedido for novo
     
+    // Habilita ou desabilita botões com base no estado do pedido
+    elements.printReceiptBtn.disabled = !!order.isNew;
+    elements.editDatesBtn.disabled = !!order.isNew;
+    
+    // Renderiza as diferentes partes da UI do pedido
     renderOrderItems(order.items, callbacks.onRemoveItem, callbacks.onQuantityChange);
     updateSummaryFooter(order);
     renderPaymentDetails(order, balance);
     renderStagedPayments(order.stagedPayments || [], callbacks.onRemoveStagedPayment);
 
-    document.getElementById('pickup-datetime-input').value = order.pickup_datetime || '';
-    document.getElementById('completed-at-input').value = order.completed_at || '';
-    elements.paidAtInput.value = order.paid_at || '';
+    // --- A LINHA QUE FALTAVA FOI ADICIONADA DE VOLTA ABAIXO ---
+    // Garante que a data de retirada seja preenchida ao carregar um pedido
+    elements.pickupDatetimeInput.value = order.pickup_datetime ? getISODateString(new Date(order.pickup_datetime)) : '';
 
+    // Lógica para atualizar a aparência dos botões de status
     elements.executionStatusOptions.querySelectorAll('.option-button').forEach(btn => {
         const isSelected = btn.dataset.status === order.execution_status;
         btn.classList.toggle('selected', isSelected);
         btn.classList.remove('status-green-light', 'status-green-dark');
         if (isSelected) {
-            if (['AGUARDANDO_RETIRADA', 'AGUARDANDO_ENTREGA'].includes(order.execution_status)) btn.classList.add('status-green-light');
-            else if (order.execution_status === 'CONCLUIDO') btn.classList.add('status-green-dark');
+            if (['AGUARDANDO_RETIRADA', 'AGUARDANDO_ENTREGA'].includes(order.execution_status)) {
+                btn.classList.add('status-green-light');
+            } else if (order.execution_status === 'CONCLUIDO') {
+                btn.classList.add('status-green-dark');
+            }
         }
     });
 }
@@ -309,8 +316,6 @@ export function renderCustomerOrdersModal(customer, orders, onSelect) {
 }
 
 
-
-
 /**
  * FUNÇÃO ATUALIZADA E SIMPLIFICADA
  * Renderiza o modal de gerenciamento de preços para um cliente.
@@ -351,6 +356,43 @@ export function renderPriceManagementModal(customer, sortedProducts, customerPro
     toggleModal('price-management-modal', true);
 }
 
+/**
+ * FUNÇÃO CORRIGIDA
+ * Abre e popula o modal de edição de datas, garantindo que a data 'created_at'
+ * seja convertida para o formato correto ('YYYY-MM-DDTHH:mm') antes de ser exibida.
+ */
+export function renderDatesModal(order) {
+    if (!order) return;
+
+    // Função interna que converte qualquer string de data para o formato do input.
+    // A chave está na linha .replace(' ', 'T')
+    const toInputDateTimeFormat = (dateString) => {
+        if (!dateString) return '';
+        
+        // Substitui o espaço por 'T' para garantir a compatibilidade
+        const formattedString = String(dateString).replace(' ', 'T');
+
+        // Cria o objeto Date a partir da string já formatada
+        const date = new Date(formattedString);
+        
+        if (isNaN(date.getTime())) {
+            console.error("Data inválida recebida:", dateString);
+            return '';
+        }
+        
+        // Retorna os primeiros 16 caracteres (YYYY-MM-DDTHH:mm)
+        return formattedString.slice(0, 16);
+    };
+
+    const modal = document.getElementById('edit-dates-modal');
+
+    // Popula os campos do modal usando a função de conversão
+    modal.querySelector('#modal-created-at').value = toInputDateTimeFormat(order.created_at);
+    modal.querySelector('#modal-completed-at').value = toInputDateTimeFormat(order.completed_at);
+    modal.querySelector('#modal-paid-at').value = toInputDateTimeFormat(order.paid_at);
+    
+    toggleModal('edit-dates-modal', true);
+}
 
 export function resetOrderView(clearCustomer = true) {
     elements.orderIdDisplay.textContent = 'Pedido #NOVO';
@@ -359,8 +401,6 @@ export function resetOrderView(clearCustomer = true) {
     renderPaymentDetails(null, { totalBalance: 0 });
     renderStagedPayments([], () => {});
     document.getElementById('pickup-datetime-input').value = '';
-    document.getElementById('completed-at-input').value = '';
-    elements.paidAtInput.value = '';
     elements.executionStatusOptions.querySelectorAll('.option-button').forEach(btn => btn.classList.remove('selected', 'status-green-light', 'status-green-dark'));
     
     if (clearCustomer) {

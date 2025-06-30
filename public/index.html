@@ -63,8 +63,9 @@
         </section>
 
         <aside id="actions-pane" class="panel">
+            <h4>Previsão de Conclusão</h4>
             <div class="form-group">
-                <label for="pickup-datetime-input">Pronto para Retirada:</label>
+                <label for="pickup-datetime-input">Retirar a partir de:</label>
                 <input type="datetime-local" id="pickup-datetime-input">
             </div>
             
@@ -75,12 +76,7 @@
                 <button class="option-button" data-status="AGUARDANDO_ENTREGA">AG. ENTREGA</button>
                 <button class="option-button" data-status="CONCLUIDO">CONCLUÍDO</button>
             </div>
-            
-            <div class="form-group">
-                <label for="completed-at-input">Data de Conclusão:</label>
-                <input type="datetime-local" id="completed-at-input">
-            </div>
-            
+                        
             <h4>Pagamento</h4>
             <div id="payment-info-display" class="payment-info">
                 <span>Status: <strong id="payment-status-display">AGUARDANDO</strong></span>
@@ -98,16 +94,12 @@
                 <button class="option-button" data-method="CREDITO">Crédito</button>
             </div>
             <ul id="staged-payments-list"></ul>
-
-            <div class="form-group">
-                <label for="paid-at-input">Data de Pagamento:</label>
-                <input type="datetime-local" id="paid-at-input">
-            </div>
-            
+           
             <div class="main-actions">
                 <button id="save-order-btn" class="action-btn save">💾 Salvar</button>
                 <button id="print-receipt-btn" class="action-btn-secondary" disabled>📄 Imprimir</button>
                 <button id="new-order-btn" class="action-btn new">✨ Limpar</button>
+                <button id="edit-dates-btn" class="action-btn-secondary">📅 Editar Datas</button>
             </div>
         </aside>
     </main>
@@ -199,6 +191,27 @@
                 </table>
             </div>
             <button id="save-prices-btn" class="button-primary">Salvar Tabela de Preços</button>
+        </div>
+    </div>
+    <div id="edit-dates-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Editar Datas do Pedido</h2>
+            <form id="edit-dates-form">
+                <div class="form-group">
+                    <label for="modal-created-at">Data de Criação do Pedido</label>
+                    <input type="datetime-local" id="modal-created-at">
+                </div>
+                <div class="form-group">
+                    <label for="modal-completed-at">Data de Conclusão Real</label>
+                    <input type="datetime-local" id="modal-completed-at">
+                </div>
+                <div class="form-group">
+                    <label for="modal-paid-at">Data de Pagamento</label>
+                    <input type="datetime-local" id="modal-paid-at">
+                </div>
+                <button type="submit" class="button-primary">Salvar Datas</button>
+            </form>
         </div>
     </div>
 
