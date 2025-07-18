@@ -5,9 +5,11 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "seed": "node database/seed.js"
+    "seed": "node database/seedcustomers.js",
+    "migrate:read": "node database/migrate_read.js",
+    "migrate:upload": "node database/migrate_upload.js"
   },
-  "author": "Desenvolvido por Gemini",
+  "author": "Desenvolvido por Brilho e Cia",
   "license": "ISC",
   "dependencies": {
     "better-sqlite3": "^11.1.2",
@@ -18,6 +20,7 @@
     "express-rate-limit": "^7.3.1",
     "helmet": "^7.1.0",
     "joi": "^17.13.3",
-    "nanoid": "^3.3.7"
+    "nanoid": "^3.3.7",
+    "xlsx": "^0.18.5"
   }
 }
