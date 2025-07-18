@@ -26,3 +26,13 @@ Thumbs.db
 # Arquivos de configuração de editores de código
 .vscode/
 .idea/
+
+# ----------------------------------------------------
+# Arquivos de Migração e Dados (Adicionado)
+# ----------------------------------------------------
+# Ignora todos os arquivos CSV na raiz e em subpastas.
+*.csv
+
+# Ignora os arquivos de dados da migração na pasta 'database'.
+database/*.xlsx
+database/*.json
