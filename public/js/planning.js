@@ -140,6 +140,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const cancelButtonHTML = isScheduled ? '<button class="cancel-schedule-btn">×</button>' : '';
 
+        // --- LÓGICA DE ESTADO VISUAL ---
+        const washStatusClass = order.is_washed ? 'completed' : (order.planned_wash_datetime ? 'scheduled' : '');
+        const passStatusClass = order.is_passed ? 'completed' : (order.planned_iron_datetime ? 'scheduled' : '');
+        // A lógica para 'is_packed' permanece a mesma, pois não há data de agendamento para ela
+        const packedStatusClass = order.is_packed ? 'completed' : '';
+
         card.innerHTML = `
             ${cancelButtonHTML}
             <div class="order-card-header">
@@ -155,15 +161,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p>Entrega: ${new Date(order.pickup_datetime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
                 <div class="status-indicators">
                     <div class="status-item">
-                        <div class="status-circle ${order.is_washed ? 'completed' : ''}" data-status="is_washed"></div>
+                        <div class="status-circle ${washStatusClass}" data-status="is_washed"></div>
                         <span class="status-label">L</span>
                     </div>
                     <div class="status-item">
-                        <div class="status-circle ${order.is_passed ? 'completed' : ''}" data-status="is_passed"></div>
+                        <div class="status-circle ${passStatusClass}" data-status="is_passed"></div>
                         <span class="status-label">P</span>
                     </div>
                     <div class="status-item">
-                        <div class="status-circle ${order.is_packed ? 'completed' : ''}" data-status="is_packed"></div>
+                        <div class="status-circle ${packedStatusClass}" data-status="is_packed"></div>
                         <span class="status-label">E</span>
                     </div>
                 </div>
@@ -190,10 +196,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleDragStart(e) {
         const card = e.currentTarget;
+        const container = card.closest('.orders-container');
         draggedCardInfo = {
             orderId: card.dataset.orderId,
             element: card,
-            sourceGrid: card.closest('.planning-grid').id
+            sourceTaskType: container.dataset.taskType || 'delivery'
         };
         setTimeout(() => card.classList.add('dragging'), 0);
         document.addEventListener('dragover', handleDragScrolling);
@@ -212,24 +219,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleDragScrolling(e) {
-        const grid = e.target.closest('.planning-grid');
-        if (!grid) {
-            if (scrollInterval) {
-                clearInterval(scrollInterval);
-                scrollInterval = null;
-            }
-            return;
-        };
-
-        const rect = grid.getBoundingClientRect();
-        const x = e.clientX - rect.left;
+        if (!draggedCardInfo) return;
+        const y = e.clientY;
+        const windowHeight = window.innerHeight;
         const scrollZone = 80;
         const scrollSpeed = 15;
 
-        if (x > rect.width - scrollZone) {
-            if (!scrollInterval) scrollInterval = setInterval(() => { grid.scrollBy(scrollSpeed, 0); }, 15);
-        } else if (x < scrollZone) {
-            if (!scrollInterval) scrollInterval = setInterval(() => { grid.scrollBy(-scrollSpeed, 0); }, 15);
+        if (y > windowHeight - scrollZone) {
+            if (!scrollInterval) scrollInterval = setInterval(() => { window.scrollBy(0, scrollSpeed); }, 15);
+        } else if (y < scrollZone) {
+            if (!scrollInterval) scrollInterval = setInterval(() => { window.scrollBy(0, -scrollSpeed); }, 15);
         } else {
             if (scrollInterval) {
                 clearInterval(scrollInterval);
@@ -254,34 +253,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!draggedCardInfo) return;
 
-        const { orderId, element: originalCard, sourceGrid } = draggedCardInfo;
+        const { orderId, element: originalCard, sourceTaskType } = draggedCardInfo;
         const targetTaskType = dropContainer.dataset.taskType;
         const targetColumn = dropContainer.closest('.day-column');
         const targetDate = targetColumn.dataset.date;
 
-        if (sourceGrid !== 'delivery-schedule-grid' && !targetTaskType) return;
+        if (!targetTaskType) return;
         
-        if (targetTaskType) {
-            try {
-                await scheduleTask(orderId, targetTaskType, targetDate);
-                const originalCardData = allOrdersData.find(o => o.order_id == orderId);
+        try {
+            await scheduleTask(orderId, targetTaskType, targetDate);
+            const originalCardData = allOrdersData.find(o => o.order_id == orderId);
 
-                if (originalCardData) {
-                    const newCard = createOrderCard(originalCardData, true);
-                    dropContainer.appendChild(newCard);
-                    updateColumnTotals(targetColumn);
-                }
-                
-                if (sourceGrid !== 'delivery-schedule-grid') {
-                     const sourceColumn = originalCard.closest('.day-column');
-                     originalCard.remove();
-                     updateColumnTotals(sourceColumn);
-                }
-            } catch (error) {
-                console.error("Erro no processo de drop:", error);
-                alert("Ocorreu um erro ao mover a tarefa.");
-                updateView();
+            if (originalCardData) {
+                const newCard = createOrderCard(originalCardData, true);
+                dropContainer.appendChild(newCard);
+                updateColumnTotals(targetColumn);
             }
+            
+            if (sourceTaskType === targetTaskType) {
+                 const sourceColumn = originalCard.closest('.day-column');
+                 originalCard.remove();
+                 updateColumnTotals(sourceColumn);
+            }
+        } catch (error) {
+            console.error("Erro no processo de drop:", error);
+            alert("Ocorreu um erro ao mover a tarefa. A página será atualizada.");
+            updateView();
         }
     }
     
@@ -337,8 +334,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
             circleElement.classList.toggle('completed', newValue);
+            
             const order = allOrdersData.find(o => o.order_id === orderId);
-            if (order) order[statusType] = newValue;
+            if (order) {
+                order[statusType] = newValue;
+                // Se marcamos como concluído, também atualizamos o estado visual do scheduled
+                if(newValue) {
+                    circleElement.classList.remove('scheduled');
+                } else {
+                    // Se desmarcamos, verificamos se deveria voltar a ser scheduled
+                    if(statusType === 'is_washed' && order.planned_wash_datetime) circleElement.classList.add('scheduled');
+                    if(statusType === 'is_passed' && order.planned_iron_datetime) circleElement.classList.add('scheduled');
+                }
+            }
         } catch (error) {
             console.error("Erro ao atualizar status:", error);
             alert('Não foi possível atualizar o estado.');
