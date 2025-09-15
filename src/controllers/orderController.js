@@ -54,10 +54,65 @@ async function handleGetCustomerOrders(req, res) {
     }
 }
 
+// ADICIONE ESTAS NOVAS FUNÇÕES AO ARQUIVO orderController.js
 
+// ADICIONE ESTAS NOVAS FUNÇÕES AO ARQUIVO orderController.js
+
+async function handleGetDailyOrders(req, res) {
+    try {
+        const { start_date, end_date } = req.query;
+        if (!start_date || !end_date) {
+            return res.status(400).json({ message: 'Datas de início e fim são obrigatórias.' });
+        }
+        const orders = orderService.getDailyAggregatedOrders(start_date, end_date);
+        res.status(200).json(orders);
+    } catch (err) {
+        console.error("Erro em handleGetDailyOrders:", err);
+        res.status(500).json({ message: 'Erro interno ao buscar dados diários.' });
+    }
+}
+
+async function handleScheduleTask(req, res) {
+    try {
+        const { order_id, task_type, schedule_date } = req.body;
+        await orderService.scheduleTask(order_id, task_type, schedule_date);
+        res.status(200).json({ message: 'Tarefa agendada com sucesso.' });
+    } catch (err) {
+        console.error("Erro em handleScheduleTask:", err);
+        res.status(500).json({ message: err.message });
+    }
+}
+
+async function handleCancelSchedule(req, res) {
+    try {
+        const { order_id, task_type } = req.body;
+        await orderService.cancelSchedule(order_id, task_type);
+        res.status(200).json({ message: 'Agendamento cancelado com sucesso.' });
+    } catch (err) {
+        console.error("Erro em handleCancelSchedule:", err);
+        res.status(500).json({ message: err.message });
+    }
+}
+
+async function handleUpdateStatus(req, res) {
+    try {
+        const { order_id, status_field, status_value } = req.body;
+        await orderService.updateOrderStatus(order_id, status_field, status_value);
+        res.status(200).json({ message: 'Status atualizado com sucesso.' });
+    } catch (err) {
+        console.error("Erro em handleUpdateStatus:", err);
+        res.status(500).json({ message: err.message });
+    }
+}
+
+// ATUALIZE SEU MODULE.EXPORTS PARA INCLUIR AS NOVAS FUNÇÕES
 module.exports = {
     handleSaveOrder,
     handleGetOrderDetails,
     handleSearchOrders,
     handleGetCustomerOrders,
+    handleGetDailyOrders,
+    handleScheduleTask,
+    handleCancelSchedule,
+    handleUpdateStatus,
 };
