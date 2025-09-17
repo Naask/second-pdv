@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (isDelivery) {
             const container = dayColumn.querySelector('.orders-container');
-            (dayData.orders || []).forEach(order => container.appendChild(createOrderCard(order)));
+            (dayData.orders || []).forEach(order => container.appendChild(createOrderCard(order, false, 'delivery')));
         }
 
         if (taskType) {
@@ -142,17 +142,26 @@ document.addEventListener('DOMContentLoaded', () => {
         card.draggable = true;
 
         const cancelButtonHTML = isScheduled ? '<button class="cancel-schedule-btn">×</button>' : '';
+        
+        // Lógica de Conclusão Refinada
+        const isOrderGloballyCompleted = ['CONCLUIDO', 'AGUARDANDO_RETIRADA'].includes(order.execution_status);
+        const isWashTaskCompleted = order.is_washed;
+        const isPassTaskCompleted = order.is_passed;
 
-        const washStatusClass = order.is_washed ? 'completed' : (order.planned_wash_datetime ? 'scheduled' : '');
-        const passStatusClass = order.is_passed ? 'completed' : (order.planned_iron_datetime ? 'scheduled' : '');
-        const packedStatusClass = order.is_packed ? 'completed' : '';
+        let isThisCardCompleted = false;
+        if (taskType === 'delivery') {
+            isThisCardCompleted = isOrderGloballyCompleted;
+        } else if (taskType === 'wash') {
+            isThisCardCompleted = isWashTaskCompleted || isOrderGloballyCompleted;
+        } else if (taskType === 'pass') {
+            isThisCardCompleted = isPassTaskCompleted || isOrderGloballyCompleted;
+        }
 
-        // Adiciona a classe principal de concluído ao card se a tarefa específica dele estiver concluída
-        if ((taskType === 'wash' && order.is_washed) || (taskType === 'pass' && order.is_passed)) {
+        if (isThisCardCompleted) {
             card.classList.add('card-completed');
         }
 
-        card.innerHTML = `
+        let cardHTML = `
             ${cancelButtonHTML}
             <div class="order-card-header">
                 <div>
@@ -163,30 +172,41 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="value-text">R$ ${formatCurrency(order.total_amount)}</span>
                 </div>
             </div>
-            <div class="order-card-footer">
-                <p>Entrega: ${new Date(order.pickup_datetime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
-                <div class="status-indicators">
-                    <div class="status-item">
-                        <div class="status-circle ${washStatusClass}" data-status="is_washed"></div>
-                        <span class="status-label">L</span>
-                    </div>
-                    <div class="status-item">
-                        <div class="status-circle ${passStatusClass}" data-status="is_passed"></div>
-                        <span class="status-label">P</span>
-                    </div>
-                    <div class="status-item">
-                        <div class="status-circle ${packedStatusClass}" data-status="is_packed"></div>
-                        <span class="status-label">E</span>
+        `;
+
+        if (!isThisCardCompleted) {
+            const washStatusClass = order.is_washed ? 'completed' : (order.planned_wash_datetime ? 'scheduled' : '');
+            const passStatusClass = order.is_passed ? 'completed' : (order.planned_iron_datetime ? 'scheduled' : '');
+            const packedStatusClass = order.is_packed ? 'completed' : '';
+
+            cardHTML += `
+                <div class="order-card-footer">
+                    <p>Entrega: ${new Date(order.pickup_datetime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+                    <div class="status-indicators">
+                        <div class="status-item">
+                            <div class="status-circle ${washStatusClass}" data-status="is_washed"></div>
+                            <span class="status-label">L</span>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-circle ${passStatusClass}" data-status="is_passed"></div>
+                            <span class="status-label">P</span>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-circle ${packedStatusClass}" data-status="is_packed"></div>
+                            <span class="status-label">E</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
+            `;
+        }
+
+        card.innerHTML = cardHTML;
         
         card.addEventListener('dragstart', handleDragStart);
         card.addEventListener('dragend', handleDragEnd);
 
         if (isScheduled) {
-            card.querySelector('.cancel-schedule-btn').addEventListener('click', handleCancelSchedule);
+            card.querySelector('.cancel-schedule-btn')?.addEventListener('click', handleCancelSchedule);
         }
 
         card.querySelectorAll('.status-circle').forEach(circle => {
@@ -200,6 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return card;
     }
 
+
     function sortCardsInColumn(container) {
         if (!container) return;
         const cards = Array.from(container.children);
@@ -210,9 +231,12 @@ document.addEventListener('DOMContentLoaded', () => {
         completed.forEach(c => container.appendChild(c));
     }
 
-    // --- LÓGICA DE DRAG-AND-DROP E AUTO-SCROLL ---
     function handleDragStart(e) {
         const card = e.currentTarget;
+        if (card.classList.contains('card-completed')) {
+            e.preventDefault();
+            return;
+        }
         const container = card.closest('.orders-container');
         draggedCardInfo = {
             orderId: card.dataset.orderId,
@@ -300,7 +324,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- FUNÇÕES DE API E EVENTOS ---
     async function scheduleTask(orderId, taskType, scheduleDate) {
         const response = await fetch('/api/v1/planning/schedule', {
             method: 'POST',
@@ -345,6 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const card = circleElement.closest('.order-card');
             const container = card.closest('.orders-container');
+            const taskType = container.dataset.taskType;
 
             await fetch('/api/v1/planning/update-status', {
                 method: 'POST',
@@ -356,13 +380,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
             
-            circleElement.classList.toggle('completed', newValue);
-            
             const order = allOrdersData.find(o => o.order_id === orderId);
             if (order) order[statusType] = newValue;
             
-            // Aplica ou remove a classe de concluído e reordena a coluna
-            card.classList.toggle('card-completed', newValue);
+            const newCard = createOrderCard(order, true, taskType);
+            card.replaceWith(newCard);
+            
             sortCardsInColumn(container);
 
         } catch (error) {
@@ -371,7 +394,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- UTILITÁRIOS ---
     function updateColumnTotals(column) {
         if (!column) return;
         const totalContainer = column.querySelector('[data-total-container]');
@@ -410,6 +432,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- EXECUÇÃO INICIAL ---
     initialize();
 });

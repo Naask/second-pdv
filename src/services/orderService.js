@@ -71,6 +71,7 @@ function getDailyAggregatedOrders(startDate, endDate) {
                     'customer_name', c.name,
                     'total_amount', o.total_amount,
                     'pickup_datetime', o.pickup_datetime,
+                    'execution_status', o.execution_status, -- <-- LINHA ADICIONADA AQUI
                     'planned_wash_datetime', o.planned_wash_datetime,
                     'planned_iron_datetime', o.planned_iron_datetime,
                     'is_washed', CASE WHEN o.actual_wash_datetime IS NOT NULL THEN 1 ELSE 0 END,
@@ -82,7 +83,6 @@ function getDailyAggregatedOrders(startDate, endDate) {
         FROM orders o
         JOIN customers c ON o.customer_id = c.customer_id
         WHERE date(o.pickup_datetime) BETWEEN date(?) AND date(?)
-        AND o.execution_status IN ('EM_EXECUCAO', 'AGUARDANDO_ENTREGA')
         GROUP BY date(o.pickup_datetime)
         ORDER BY date;
     `;
