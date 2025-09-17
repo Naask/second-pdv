@@ -120,18 +120,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (order.planned_wash_datetime) {
                 const dateStr = order.planned_wash_datetime.split('T')[0];
                 const container = washScheduleGrid.querySelector(`[data-date="${dateStr}"] .orders-container`);
-                if (container) container.appendChild(createOrderCard(order, true));
+                if (container) container.appendChild(createOrderCard(order, true, 'wash'));
             }
             if (order.planned_iron_datetime) {
                 const dateStr = order.planned_iron_datetime.split('T')[0];
                 const container = passScheduleGrid.querySelector(`[data-date="${dateStr}"] .orders-container`);
-                if (container) container.appendChild(createOrderCard(order, true));
+                if (container) container.appendChild(createOrderCard(order, true, 'pass'));
             }
         });
-        document.querySelectorAll('.day-column').forEach(updateColumnTotals);
+        document.querySelectorAll('.day-column').forEach(column => {
+            sortCardsInColumn(column.querySelector('.orders-container'));
+            updateColumnTotals(column);
+        });
     }
 
-    function createOrderCard(order, isScheduled = false) {
+    function createOrderCard(order, isScheduled = false, taskType = null) {
         const card = document.createElement('div');
         card.className = 'order-card';
         card.dataset.orderId = order.order_id;
@@ -140,11 +143,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const cancelButtonHTML = isScheduled ? '<button class="cancel-schedule-btn">×</button>' : '';
 
-        // --- LÓGICA DE ESTADO VISUAL ---
         const washStatusClass = order.is_washed ? 'completed' : (order.planned_wash_datetime ? 'scheduled' : '');
         const passStatusClass = order.is_passed ? 'completed' : (order.planned_iron_datetime ? 'scheduled' : '');
-        // A lógica para 'is_packed' permanece a mesma, pois não há data de agendamento para ela
         const packedStatusClass = order.is_packed ? 'completed' : '';
+
+        // Adiciona a classe principal de concluído ao card se a tarefa específica dele estiver concluída
+        if ((taskType === 'wash' && order.is_washed) || (taskType === 'pass' && order.is_passed)) {
+            card.classList.add('card-completed');
+        }
 
         card.innerHTML = `
             ${cancelButtonHTML}
@@ -194,6 +200,17 @@ document.addEventListener('DOMContentLoaded', () => {
         return card;
     }
 
+    function sortCardsInColumn(container) {
+        if (!container) return;
+        const cards = Array.from(container.children);
+        const pending = cards.filter(c => !c.classList.contains('card-completed'));
+        const completed = cards.filter(c => c.classList.contains('card-completed'));
+        container.innerHTML = '';
+        pending.forEach(c => container.appendChild(c));
+        completed.forEach(c => container.appendChild(c));
+    }
+
+    // --- LÓGICA DE DRAG-AND-DROP E AUTO-SCROLL ---
     function handleDragStart(e) {
         const card = e.currentTarget;
         const container = card.closest('.orders-container');
@@ -265,8 +282,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const originalCardData = allOrdersData.find(o => o.order_id == orderId);
 
             if (originalCardData) {
-                const newCard = createOrderCard(originalCardData, true);
+                const newCard = createOrderCard(originalCardData, true, targetTaskType);
                 dropContainer.appendChild(newCard);
+                sortCardsInColumn(dropContainer);
                 updateColumnTotals(targetColumn);
             }
             
@@ -282,6 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    // --- FUNÇÕES DE API E EVENTOS ---
     async function scheduleTask(orderId, taskType, scheduleDate) {
         const response = await fetch('/api/v1/planning/schedule', {
             method: 'POST',
@@ -324,6 +343,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function updateOrderStatus(orderId, statusType, newValue, circleElement) {
         try {
+            const card = circleElement.closest('.order-card');
+            const container = card.closest('.orders-container');
+
             await fetch('/api/v1/planning/update-status', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -333,26 +355,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     status_value: newValue
                 })
             });
+            
             circleElement.classList.toggle('completed', newValue);
             
             const order = allOrdersData.find(o => o.order_id === orderId);
-            if (order) {
-                order[statusType] = newValue;
-                // Se marcamos como concluído, também atualizamos o estado visual do scheduled
-                if(newValue) {
-                    circleElement.classList.remove('scheduled');
-                } else {
-                    // Se desmarcamos, verificamos se deveria voltar a ser scheduled
-                    if(statusType === 'is_washed' && order.planned_wash_datetime) circleElement.classList.add('scheduled');
-                    if(statusType === 'is_passed' && order.planned_iron_datetime) circleElement.classList.add('scheduled');
-                }
-            }
+            if (order) order[statusType] = newValue;
+            
+            // Aplica ou remove a classe de concluído e reordena a coluna
+            card.classList.toggle('card-completed', newValue);
+            sortCardsInColumn(container);
+
         } catch (error) {
             console.error("Erro ao atualizar status:", error);
             alert('Não foi possível atualizar o estado.');
         }
     }
     
+    // --- UTILITÁRIOS ---
     function updateColumnTotals(column) {
         if (!column) return;
         const totalContainer = column.querySelector('[data-total-container]');
@@ -391,5 +410,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- EXECUÇÃO INICIAL ---
     initialize();
 });
