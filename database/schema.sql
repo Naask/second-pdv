@@ -13,20 +13,27 @@ CREATE TABLE IF NOT EXISTS products (
     category TEXT NOT NULL,
     unit_of_measure TEXT NOT NULL DEFAULT 'UN'
 );
--- Tabela de Pedidos (COM A CORREÇÃO NA REGRA 'CHECK')
+
+-- Tabela de Pedidos (ATUALIZADA)
 CREATE TABLE IF NOT EXISTS orders (
     order_id TEXT PRIMARY KEY,
     customer_id TEXT NOT NULL,
     
-    -- CORREÇÃO: Adicionado 'AGUARDANDO_EXECUCAO' à lista de valores permitidos
     execution_status TEXT NOT NULL DEFAULT 'AGUARDANDO_EXECUCAO' CHECK(execution_status IN ('AGUARDANDO_EXECUCAO', 'EM_EXECUCAO', 'AGUARDANDO_RETIRADA', 'AGUARDANDO_ENTREGA', 'CONCLUIDO')),
     
-    payment_status TEXT NOT NULL DEFAULT 'AGUARDANDO_PAGAMENTO' CHECK(payment_status IN ('AGUARDANDO_PAGAMENTO', 'PAGO')),
+    payment_status TEXT NOT NULL DEFAULT 'AGUARDANDO_PAGAMENTO' CHECK(payment_status IN ('AGUARDANDO_PAGAMENTO', 'PAGO', 'PAGO_PARCIALMENTE')),
     total_amount INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     pickup_datetime DATETIME,
     completed_at DATETIME,
     paid_at DATETIME,
+
+    -- Colunas de Planeamento
+    planned_wash_datetime DATETIME,
+    actual_wash_datetime DATETIME,
+    planned_iron_datetime DATETIME,
+    actual_iron_datetime DATETIME,
+    
     FOREIGN KEY (customer_id) REFERENCES customers (customer_id)
 );
 
