@@ -5,7 +5,7 @@ header { background-color: #563d7c; color: white; padding: 0.5rem; text-align: c
 header h1 { font-size: 1.2rem; margin: 0; }
 main { padding: 1rem; }
 .controls-container { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; background-color: white; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-#planning-controls { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
+#date-controls { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
 .controls-container label { font-weight: bold; }
 .controls-container input { padding: 0.5rem; border: 1px solid #ced4da; border-radius: 4px; font-size: 1rem; }
 .controls-container button { padding: 0.6rem 1rem; color: white; border: none; border-radius: 4px; cursor: pointer; background-color: #007bff; }
@@ -31,10 +31,21 @@ main { padding: 1rem; }
 .day-panel { background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 .day-panel h2 { padding: 0.75rem 1rem; border-radius: 8px 8px 0 0; color: white; font-size: 1.2rem; }
 #today-title { background-color: #343a40; }
-#tomorrow-title { background-color: #6c757d; }
+
+/* --- CORREÇÃO VISUAL --- */
+/* Usa as cores da seção "Passadoria" para o segundo painel */
+#tomorrow-title { 
+    background-color: #6f42c1; /* Roxo Sutil */
+}
+#daily-view-container .day-panel:nth-child(2) {
+    background-color: #f3effc; /* Roxo Sutil bem claro */
+}
+/* --- FIM DA CORREÇÃO --- */
+
 .panel-columns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; padding: 1rem; }
 .task-column h3 { text-align: center; margin-bottom: 0.5rem; font-size: 1rem; color: #495057; }
 .task-column .orders-container { background-color: #f8f9fa; border-radius: 6px; padding: 0.5rem; min-height: 400px; }
+.column-total { text-align: center; font-weight: bold; color: #495057; background-color: #e9ecef; padding: 0.25rem; margin-bottom: 0.5rem; border-radius: 4px; font-size: 0.9rem; }
 
 /* --- ESTILOS COMPARTILHADOS --- */
 .hidden { display: none !important; }

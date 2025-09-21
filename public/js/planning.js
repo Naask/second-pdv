@@ -114,15 +114,10 @@ document.addEventListener('DOMContentLoaded', () => {
         distributeCards();
     }
     
-    /**
-     * FUNÇÃO CORRIGIDA
-     * Reintroduz o HTML dos totalizadores financeiros no cabeçalho da coluna.
-     */
     function createPlanningDayColumn(date, dateStr, taskType) {
         const dayColumn = document.createElement('div');
         dayColumn.className = 'day-column';
         
-        // CORREÇÃO: O HTML dos totalizadores foi adicionado de volta aqui.
         let detailsHTML = '';
         if (taskType === 'delivery') {
             detailsHTML = `<div class="day-financials financial-info" data-total-container="true">Total: <span class="value-text">R$ 0,00</span></div>`;
@@ -170,10 +165,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    /**
-     * FUNÇÃO CORRIGIDA
-     * Chama a função `updateAllColumnTotals` após distribuir e ordenar os cards.
-     */
     function distributeCards() {
         document.querySelectorAll('.orders-container').forEach(c => c.innerHTML = '');
         allOrdersData.forEach(order => {
@@ -194,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         document.querySelectorAll('.orders-container').forEach(sortCardsInColumn);
-        updateAllColumnTotals(); // CORREÇÃO: Atualiza os totais após tudo estar renderizado.
+        updateAllColumnTotals();
     }
     
     function createOrderCard(order, isScheduled = false, taskType = null) {
@@ -250,7 +241,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (dateA) return -1; if (dateB) return 1; return 0;
         });
         
-        // Reconstrói a coluna com os cards ordenados
         const fragment = document.createDocumentFragment();
         pending.forEach(c => fragment.appendChild(c));
         completed.forEach(c => fragment.appendChild(c));
@@ -374,12 +364,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FUNÇÕES UTILITÁRIAS ---
     /**
-     * NOVA FUNÇÃO
-     * Itera sobre todas as colunas de planejamento visíveis e atualiza seus totais.
+     * FUNÇÃO CORRIGIDA
+     * Agora itera sobre as colunas de ambas as visões para calcular e exibir os totais.
      */
     function updateAllColumnTotals() {
-        const columns = document.querySelectorAll('#planning-view-container .day-column');
-        columns.forEach(column => {
+        // Visão de Planejamento
+        document.querySelectorAll('#planning-view-container .day-column').forEach(column => {
             const totalContainer = column.querySelector('[data-total-container]');
             if (!totalContainer) return;
 
@@ -390,6 +380,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 totalValue += parseFloat(card.dataset.orderValue) || 0;
             });
             
+            const valueTextElement = totalContainer.querySelector('.value-text');
+            if (valueTextElement) {
+                valueTextElement.textContent = `R$ ${formatCurrency(totalValue)}`;
+            }
+        });
+
+        // Visão Lado a Lado
+        document.querySelectorAll('#daily-view-container .task-column').forEach(column => {
+            const totalContainer = column.querySelector('.column-total');
+            if (!totalContainer) return;
+            const container = column.querySelector('.orders-container');
+            const cards = container.querySelectorAll('.order-card');
+            let totalValue = 0;
+            cards.forEach(card => {
+                totalValue += parseFloat(card.dataset.orderValue) || 0;
+            });
             const valueTextElement = totalContainer.querySelector('.value-text');
             if (valueTextElement) {
                 valueTextElement.textContent = `R$ ${formatCurrency(totalValue)}`;
