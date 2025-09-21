@@ -66,14 +66,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const dateStr = d.toISOString().split('T')[0];
             const dayData = ordersByDay.find(item => item.date === dateStr) || { orders: [] };
             
-            deliveryScheduleGrid.appendChild(createDayColumn(d, dayData, true));
+            // CORREÇÃO: O taskType da coluna de entrega é 'delivery' para a lógica de ordenação, mas não terá listeners de drop.
+            deliveryScheduleGrid.appendChild(createDayColumn(d, dayData, true, 'delivery')); 
             washScheduleGrid.appendChild(createDayColumn(d, dayData, false, 'wash'));
             passScheduleGrid.appendChild(createDayColumn(d, dayData, false, 'pass'));
         }
         distributeScheduledCards();
     }
 
-    function createDayColumn(date, dayData, isDelivery, taskType = null) {
+    function createDayColumn(date, dayData, isDelivery, taskType) {
         const dateStr = date.toISOString().split('T')[0];
         const dayColumn = document.createElement('div');
         dayColumn.className = 'day-column';
@@ -98,20 +99,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h3 class="day-title">${date.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}</h3>
                 ${detailsHTML}
             </div>
-            <div class="orders-container" data-task-type="${taskType || ''}"></div>
+            <div class="orders-container" data-task-type="${taskType}"></div>
         `;
 
+        const container = dayColumn.querySelector('.orders-container');
         if (isDelivery) {
-            const container = dayColumn.querySelector('.orders-container');
             (dayData.orders || []).forEach(order => container.appendChild(createOrderCard(order, false, 'delivery')));
         }
-
-        if (taskType) {
-            const container = dayColumn.querySelector('.orders-container');
+        
+        // CORREÇÃO: Adiciona listeners de drag/drop APENAS para colunas de 'wash' e 'pass'
+        if (taskType === 'wash' || taskType === 'pass') {
             container.addEventListener('dragover', handleDragOver);
             container.addEventListener('dragleave', handleDragLeave);
             container.addEventListener('drop', handleDrop);
         }
+        
         return dayColumn;
     }
     
@@ -128,6 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (container) container.appendChild(createOrderCard(order, true, 'pass'));
             }
         });
+        // Após distribuir, ordena todas as colunas e atualiza os totais.
         document.querySelectorAll('.day-column').forEach(column => {
             sortCardsInColumn(column.querySelector('.orders-container'));
             updateColumnTotals(column);
@@ -139,11 +142,14 @@ document.addEventListener('DOMContentLoaded', () => {
         card.className = 'order-card';
         card.dataset.orderId = order.order_id;
         card.dataset.orderValue = order.total_amount;
+        // Adiciona as datas como data attributes para permitir a ordenação
+        card.dataset.pickupDatetime = order.pickup_datetime;
+        card.dataset.plannedWashDatetime = order.planned_wash_datetime;
+        card.dataset.plannedIronDatetime = order.planned_iron_datetime;
         card.draggable = true;
 
         const cancelButtonHTML = isScheduled ? '<button class="cancel-schedule-btn">×</button>' : '';
         
-        // Lógica de Conclusão Refinada
         const isOrderGloballyCompleted = ['CONCLUIDO', 'AGUARDANDO_RETIRADA'].includes(order.execution_status);
         const isWashTaskCompleted = order.is_washed;
         const isPassTaskCompleted = order.is_passed;
@@ -219,16 +225,52 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         return card;
     }
-
-
+    
+    /**
+     * FUNÇÃO CORRIGIDA E FINAL
+     * Ordena os cards dentro de um container com base no tipo de tarefa da coluna.
+     */
     function sortCardsInColumn(container) {
         if (!container) return;
+
+        const taskType = container.dataset.taskType;
         const cards = Array.from(container.children);
+        
         const pending = cards.filter(c => !c.classList.contains('card-completed'));
         const completed = cards.filter(c => c.classList.contains('card-completed'));
+
+        // Define qual data usar para ordenação com base na coluna
+        const getDateForCard = (card) => {
+            let dateStr;
+            switch (taskType) {
+                case 'wash':
+                    dateStr = card.dataset.plannedWashDatetime;
+                    break;
+                case 'pass':
+                    dateStr = card.dataset.plannedIronDatetime;
+                    break;
+                case 'delivery':
+                default:
+                    dateStr = card.dataset.pickupDatetime;
+                    break;
+            }
+            return dateStr && dateStr !== 'null' ? new Date(dateStr) : null;
+        };
+
+        // Ordena os cards pendentes
+        pending.sort((a, b) => {
+            const dateA = getDateForCard(a);
+            const dateB = getDateForCard(b);
+            if (dateA && dateB) return dateA - dateB;
+            if (dateA) return -1; // Cards com data vêm antes
+            if (dateB) return 1;
+            return 0;
+        });
+
+        // Limpa e reaplicar os cards na ordem correta
         container.innerHTML = '';
         pending.forEach(c => container.appendChild(c));
-        completed.forEach(c => container.appendChild(c));
+        completed.forEach(c => container.appendChild(c)); // Concluídos sempre ao final
     }
 
     function handleDragStart(e) {
@@ -383,7 +425,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const order = allOrdersData.find(o => o.order_id === orderId);
             if (order) order[statusType] = newValue;
             
-            const newCard = createOrderCard(order, true, taskType);
+            // Recria o card para refletir o novo estado
+            const newCard = createOrderCard(order, taskType !== 'delivery', taskType);
             card.replaceWith(newCard);
             
             sortCardsInColumn(container);
