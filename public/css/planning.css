@@ -1,153 +1,95 @@
 /* public/css/planning.css */
-:root {
-    --color-wash: #007bff;
-    --color-iron: #28a745;
-    --color-border: #dee2e6;
-    --color-background: #f8f9fa;
+
+body { font-family: system-ui, sans-serif; background-color: #f4f7f6; margin: 0; }
+header { background-color: #563d7c; color: white; padding: 0.5rem; text-align: center; }
+header h1 { font-size: 1.2rem; margin: 0; }
+main { padding: 1rem; }
+.controls-container { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; background-color: white; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.controls-container label { font-weight: bold; }
+.controls-container input { padding: 0.5rem; border: 1px solid #ced4da; border-radius: 4px; font-size: 1rem; }
+.controls-container button { padding: 0.6rem 1rem; color: white; border: none; border-radius: 4px; cursor: pointer; background-color: #007bff; }
+#toggle-visibility-button { background-color: #6c757d; width: 40px; height: 40px; padding: 0.5rem; display: flex; align-items: center; justify-content: center; }
+
+/* --- ESTILOS DO PAINEL ATUALIZADOS --- */
+.schedule-block { 
+    background-color: #ffffff; 
+    border-radius: 8px; 
+    padding: 1rem; 
+    margin-bottom: 2rem; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
 }
 
-body {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    background-color: #f4f7f6;
-    margin: 0;
-    color: #343a40;
-    overflow-x: hidden;
-}
-
-header {
-    background-color: #343a40;
-    color: white;
-    padding: 1rem 2rem;
-    text-align: center;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.date-controls {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-    margin-bottom: 0.5rem;
-}
-
-.date-controls button {
-    padding: 0.6rem 1.2rem;
-    color: white;
-    background-color: #007bff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: 500;
-    transition: background-color 0.2s ease;
-}
-
-.date-controls button:hover {
-    background-color: #0056b3;
-}
-
-#week-display {
-    margin: 0;
-    font-weight: 400;
-    font-size: 1.2rem;
-}
-
-#planning-board {
-    display: flex;
-    gap: 8px;
-    padding: 1rem;
-    align-items: flex-start;
-    overflow-x: auto;
-    min-height: calc(100vh - 120px);
-}
-
-.day-column {
-    flex: 1 1 280px;
-    min-width: 280px;
-    max-width: 350px;
-    background-color: var(--color-background);
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    display: flex;
-    flex-direction: column;
-}
-
-.day-column.drag-over {
-    border: 2px dashed var(--color-wash);
-    background-color: #e9f2ff;
-}
-
-.column-header {
+.schedule-block h2 {
+    margin: -1rem -1rem 1rem -1rem;
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--color-border);
-    font-weight: 600;
+    border-radius: 8px 8px 0 0;
+    color: white;
+    font-size: 1.1rem;
+    border-bottom: none;
 }
 
-.column-header.today {
-    background-color: #fffbe6;
+/* --- Paleta de Cores: "Moderno & Sóbrio" --- */
+#delivery-section h2 {
+    background-color: #495057; /* Cinza Chumbo */
 }
 
-.column-body {
-    padding: 8px;
-    flex-grow: 1;
-    min-height: 200px;
-    transition: background-color 0.2s ease;
+#wash-section h2 {
+    background-color: #17a2b8; /* Azul Petróleo */
 }
 
-.order-card {
-    background-color: white;
-    border-radius: 5px;
-    padding: 12px;
-    margin-bottom: 8px;
-    cursor: grab;
-    border-left: 5px solid;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+#pass-section h2 {
+    background-color: #6f42c1; /* Roxo Sutil */
 }
 
-.order-card.task-wash { border-color: var(--color-wash); }
-.order-card.task-iron { border-color: var(--color-iron); }
-
-.card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
+.planning-grid { 
+    display: flex; 
+    gap: 1rem; 
+    overflow-x: auto; 
+    padding: 1rem 0.5rem; 
+    border-radius: 8px;
 }
 
-.order-id { font-size: 1rem; }
-.customer-name { font-size: 0.9rem; color: #6c757d; }
+#delivery-section .planning-grid {
+    background-color: #f8f9fa; /* Cinza bem claro */
+}
+#wash-section .planning-grid {
+    background-color: #e8f7fa; /* Azul Petróleo bem claro */
+}
+#pass-section .planning-grid {
+    background-color: #f3effc; /* Roxo Sutil bem claro */
+}
+/* --- FIM DAS ATUALIZAÇÕES DE ESTILO --- */
 
-.items-summary {
-    font-size: 0.85rem;
-    margin: 0 0 4px 0;
-}
 
-.pickup-date {
-    font-size: 0.8rem;
-    color: #dc3545;
-    font-weight: 500;
-    margin: 0;
+.day-column { flex: 0 0 320px; background-color: #fdfdfd; border: 1px solid #f0f0f0; border-radius: 8px; }
+.day-header { padding: 0.75rem; background-color: #343a40; color: white; border-radius: 6px 6px 0 0; }
+.day-title { font-size: 1.2rem; font-weight: bold; margin: 0; }
+.day-load, .day-financials { font-size: 0.9rem; margin-top: 0.5rem; }
+.day-financials { border-top: 1px solid #6c757d; padding-top: 0.5rem; }
+.day-scheduled-financials { font-size: 0.9rem; margin-top: 0.5rem; color: #ffc107; }
+.orders-container { padding: 0.5rem; min-height: 250px; transition: background-color 0.2s ease; }
+.orders-container.drag-over { background-color: #d1e7dd; }
+.order-card.dragging { opacity: 0.5; transform: rotate(3deg); }
+.order-card.card-completed { background-color: #d1e7dd; opacity: 0.7; border-left-color: #28a745; }
+.order-card.card-completed .order-card-title,
+.order-card.card-completed .order-card-subtitle {
+    text-decoration: line-through;
+    color: #6c757d;
 }
-
-.loading-overlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background-color: rgba(255, 255, 255, 0.7);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-.spinner {
-    border: 5px solid #f3f3f3;
-    border-top: 5px solid #007bff;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    animation: spin 1s linear infinite;
-}
-.hidden { display: none; }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.order-card { position: relative; background-color: white; border-radius: 6px; padding: 0.6rem 1rem; margin-bottom: 0.5rem; box-shadow: 0 1px 2px rgba(0,0,0,0.1); cursor: pointer; border-left: 5px solid #007bff; display: grid; grid-template-columns: 1fr; grid-template-rows: auto auto auto; gap: 0.5rem; }
+.order-card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+.order-card-title { font-weight: bold; margin: 0; font-size: 1rem; }
+.order-card-subtitle { font-size: 0.9rem; font-weight: normal; color: #6c757d; }
+.order-card-value { font-weight: bold; font-size: 1rem; color: #17a2b8; white-space: nowrap; text-align: right; }
+.order-card-footer { display: flex; justify-content: space-between; align-items: center; }
+.order-card p { margin: 0; font-size: 0.9rem; }
+.status-indicators { display: flex; gap: 0.75rem; align-items: center; }
+.status-item { display: flex; flex-direction: column; align-items: center; }
+.status-circle { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #6c757d; background-color: white; cursor: pointer; }
+.status-circle.scheduled { background-color: #d3d3d3; border-color: #6c757d; }
+.status-circle.completed { background-color: #28a745; border-color: #28a745; }
+.status-label { font-size: 0.8rem; text-align: center; color: #6c757d; margin-top: 2px; }
+.cancel-schedule-btn { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border-radius: 50%; border: none; background-color: #dc3545; color: white; font-size: 12px; font-weight: bold; line-height: 20px; text-align: center; cursor: pointer; opacity: 0; transition: opacity 0.2s ease-in-out; }
+.order-card:hover .cancel-schedule-btn { opacity: 1; }
+main.values-hidden .financial-info { display: none; }
+.time-input { font-size: 0.9rem; padding: 2px; border: 1px solid #007bff; border-radius: 4px; width: 70px; }

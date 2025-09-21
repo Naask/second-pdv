@@ -15,12 +15,17 @@ document.addEventListener('DOMContentLoaded', () => {
     let allOrdersData = [];
     let draggedCardInfo = null;
     let scrollInterval = null;
+    let autoRefreshInterval = null; // NOVO: Variável para guardar o ID do temporizador
 
     // --- INICIALIZAÇÃO ---
     function initialize() {
         setDefaultDates();
         addEventListeners();
         updateView();
+
+        // NOVO: Inicia o temporizador de atualização automática (2 minutos = 120000 ms)
+        if (autoRefreshInterval) clearInterval(autoRefreshInterval); // Limpa qualquer temporizador anterior
+        autoRefreshInterval = setInterval(updateView, 120000);
     }
 
     function setDefaultDates() {
@@ -40,8 +45,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- LÓGICA DE DADOS E RENDERIZAÇÃO ---
     async function fetchAndRenderSchedules(startDate, endDate) {
-        const loadingHTML = '<p style="padding: 1rem;">A carregar planeamento...</p>';
-        [deliveryScheduleGrid, washScheduleGrid, passScheduleGrid].forEach(grid => grid.innerHTML = loadingHTML);
+        // Não mostra o "carregando" em atualizações automáticas para não piscar a tela
+        const isManualRefresh = !autoRefreshInterval; 
+        if(isManualRefresh) {
+            const loadingHTML = '<p style="padding: 1rem;">A carregar planeamento...</p>';
+            [deliveryScheduleGrid, washScheduleGrid, passScheduleGrid].forEach(grid => grid.innerHTML = loadingHTML);
+        }
+
         try {
             const url = `/api/v1/planning/daily-orders?start_date=${startDate}&end_date=${endDate}`;
             const response = await fetch(url);
@@ -116,10 +126,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /**
-     * FUNÇÃO ALTERADA
-     * Se o horário agendado for nulo, exibe "Definir horário" para manter o card clicável.
-     */
     function createOrderCard(order, isScheduled = false, taskType = null) {
         const card = document.createElement('div');
         card.className = 'order-card';
@@ -148,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let scheduleTimeHTML = `<p>Entrega: ${formatTimeFromISO(order.pickup_datetime)}</p>`;
             if (isScheduled) {
                 const scheduleDateStr = taskType === 'wash' ? order.planned_wash_datetime : order.planned_iron_datetime;
-                const timeText = formatTimeFromISO(scheduleDateStr) || 'Definir horário'; // <-- MUDANÇA AQUI
+                const timeText = formatTimeFromISO(scheduleDateStr) || 'Definir horário';
                 scheduleTimeHTML = `<p class="scheduled-time-container" style="cursor: pointer; color: #0056b3;" title="Clique para editar o horário">Agendado: <span class="editable-time">${timeText}</span></p>`;
             }
             cardHTML += `<div class="order-card-footer">${scheduleTimeHTML}<div class="status-indicators"><div class="status-item"><div class="status-circle ${washStatusClass}" data-status="is_washed"></div><span class="status-label">L</span></div><div class="status-item"><div class="status-circle ${passStatusClass}" data-status="is_passed"></div><span class="status-label">P</span></div><div class="status-item"><div class="status-circle ${packedStatusClass}" data-status="is_packed"></div><span class="status-label">E</span></div></div></div>`;
@@ -166,7 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return card;
     }
     
-    // ... (função sortCardsInColumn permanece a mesma)
     function sortCardsInColumn(container) {
         if (!container) return;
         const taskType = container.dataset.taskType;
@@ -193,8 +198,6 @@ document.addEventListener('DOMContentLoaded', () => {
         completed.forEach(c => container.appendChild(c));
     }
 
-
-    // ... (funções de Drag & Drop permanecem as mesmas)
     function handleDragStart(e) {
         const card = e.currentTarget;
         if (card.classList.contains('card-completed')) { e.preventDefault(); return; }
@@ -237,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const dropContainer = e.currentTarget;
         dropContainer.classList.remove('drag-over');
         if (!draggedCardInfo) return;
-        const { orderId, element: originalCard, sourceTaskType } = draggedCardInfo;
+        const { orderId, element: originalCard } = draggedCardInfo;
         const targetTaskType = dropContainer.dataset.taskType;
         const targetColumn = dropContainer.closest('.day-column');
         const targetDateStr = targetColumn.dataset.date;
@@ -249,22 +252,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             await scheduleTask(orderId, targetTaskType, newScheduleDateTime);
-            const originalCardData = allOrdersData.find(o => o.order_id == orderId);
-            if (originalCardData) {
-                const newCard = createOrderCard(originalCardData, true, targetTaskType);
-                dropContainer.appendChild(newCard);
-                sortCardsInColumn(dropContainer);
-                updateColumnTotals(targetColumn);
-            }
-            if (sourceTaskType === targetTaskType) {
-                 const sourceColumn = originalCard.closest('.day-column');
-                 originalCard.remove();
-                 updateColumnTotals(sourceColumn);
-            }
+            updateView(); // Força a atualização da tela inteira
         } catch (error) {
             console.error("Erro no processo de drop:", error);
-            alert("Ocorreu um erro ao mover a tarefa. A página será atualizada.");
-            updateView();
+            alert(`Não foi possível agendar: ${error.message}`);
+            updateView(); // Atualiza mesmo em caso de erro para reverter visualmente
         }
     }
     
@@ -276,36 +268,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         if (!response.ok) {
             const errorData = await response.json();
-            console.error('Falha ao agendar tarefa no backend:', errorData);
             throw new Error(errorData.details || 'Falha ao agendar tarefa no backend.');
-        }
-        const order = allOrdersData.find(o => o.order_id === orderId);
-        if (order) {
-            if(taskType === 'wash') order.planned_wash_datetime = scheduleDateTime;
-            if(taskType === 'pass') order.planned_iron_datetime = scheduleDateTime;
         }
     }
 
     async function handleCancelSchedule(e) {
         e.stopPropagation();
         const card = e.currentTarget.closest('.order-card');
-        const column = card.closest('.day-column');
         const orderId = card.dataset.orderId;
         const taskType = card.closest('.orders-container').dataset.taskType;
         try {
-            // Para cancelar, enviamos uma data simbólica do passado, que será substituída por NULL no backend.
             await fetch('/api/v1/planning/cancel-schedule', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ order_id: orderId, task_type: taskType })
             });
-            card.remove();
-            updateColumnTotals(column);
-            const order = allOrdersData.find(o => o.order_id === orderId);
-            if(order) {
-                if(taskType === 'wash') order.planned_wash_datetime = null;
-                if(taskType === 'pass') order.planned_iron_datetime = null;
-            }
+            updateView(); // Força a atualização da tela inteira
         } catch (error) {
             console.error("Erro ao cancelar:", error);
             alert('Não foi possível cancelar o agendamento.');
@@ -314,36 +292,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function updateOrderStatus(orderId, statusType, newValue, circleElement) {
         try {
-            const card = circleElement.closest('.order-card');
-            const container = card.closest('.orders-container');
-            const taskType = container.dataset.taskType;
             await fetch('/api/v1/planning/update-status', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ order_id: orderId, status_field: statusType, status_value: newValue })
             });
-            const order = allOrdersData.find(o => o.order_id === orderId);
-            if (order) order[statusType] = newValue;
-            const newCard = createOrderCard(order, taskType !== 'delivery', taskType);
-            card.replaceWith(newCard);
-            sortCardsInColumn(container);
+            updateView(); // Força a atualização da tela inteira
         } catch (error) {
             console.error("Erro ao atualizar status:", error);
             alert('Não foi possível atualizar o estado.');
         }
     }
     
-    /**
-     * FUNÇÃO CORRIGIDA
-     * Adiciona validação para não salvar horários vazios e melhora a experiência de edição.
-     */
     function handleEditableTimeClick(e) {
         const target = e.target;
         if (!target.classList.contains('editable-time') || target.querySelector('input')) return;
 
         const timeContainer = target.parentElement;
         const originalText = target.textContent;
-        // Se o texto for "Definir horário", o input começa vazio para o usuário preencher.
         const originalTime = originalText === 'Definir horário' ? '' : originalText;
         
         target.style.display = 'none';
@@ -359,7 +325,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const finishEditing = async () => {
             const newTime = input.value;
             
-            // Se o valor estiver vazio ou for igual ao original, apenas reverte a UI sem chamar a API.
             if (!newTime || newTime === originalTime) {
                 target.style.display = '';
                 input.remove();
@@ -367,26 +332,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             const card = input.closest('.order-card');
-            const container = card.closest('.orders-container');
-            const column = card.closest('.day-column');
             const orderId = card.dataset.orderId;
-            const taskType = container.dataset.taskType;
-            const dateStr = column.dataset.date;
+            const taskType = card.closest('.orders-container').dataset.taskType;
+            const dateStr = card.closest('.day-column').dataset.date;
             const newScheduleDateTime = `${dateStr}T${newTime}:00`;
 
             try {
                 await scheduleTask(orderId, taskType, newScheduleDateTime);
-                if (taskType === 'wash') card.dataset.plannedWashDatetime = newScheduleDateTime;
-                if (taskType === 'pass') card.dataset.plannedIronDatetime = newScheduleDateTime;
-                target.textContent = newTime;
-                sortCardsInColumn(container);
+                updateView(); // Força a atualização da tela inteira
             } catch (error) {
                 console.error('Erro ao salvar novo horário:', error);
-                // Exibe o erro vindo do backend, que é mais claro para o usuário.
                 alert(`Não foi possível salvar: ${error.message}`);
+                // A UI não precisa ser revertida manualmente, pois o updateView() fará isso
             } finally {
                 target.style.display = '';
-                input.remove();
+                if(document.body.contains(input)) input.remove();
             }
         };
 
@@ -404,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function formatTimeFromISO(isoString) {
         if (!isoString || !isoString.includes('T')) {
-            return null; // Retorna null se a data for inválida ou nula
+            return null;
         }
         return isoString.split('T')[1].substring(0, 5);
     }
@@ -432,10 +392,17 @@ document.addEventListener('DOMContentLoaded', () => {
         eyeIconClosed.style.display = isHidden ? 'block' : 'none';
     }
 
+    /**
+     * FUNÇÃO ALTERADA
+     * Esta é agora a única função que busca dados e redesenha a tela.
+     */
     function updateView() {
         const startDate = startDateInput.value;
         const endDate = endDateInput.value;
-        if (startDate && endDate) { fetchAndRenderSchedules(startDate, endDate); }
+        if (startDate && endDate) { 
+            console.log("Atualizando visualização..."); // Log para depuração
+            fetchAndRenderSchedules(startDate, endDate); 
+        }
     }
 
     initialize();
