@@ -117,8 +117,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * FUNÇÃO CORRIGIDA
-     * Utiliza a nova função `formatTimeFromISO` para evitar problemas de fuso horário.
+     * FUNÇÃO ALTERADA
+     * Se o horário agendado for nulo, exibe "Definir horário" para manter o card clicável.
      */
     function createOrderCard(order, isScheduled = false, taskType = null) {
         const card = document.createElement('div');
@@ -148,7 +148,8 @@ document.addEventListener('DOMContentLoaded', () => {
             let scheduleTimeHTML = `<p>Entrega: ${formatTimeFromISO(order.pickup_datetime)}</p>`;
             if (isScheduled) {
                 const scheduleDateStr = taskType === 'wash' ? order.planned_wash_datetime : order.planned_iron_datetime;
-                scheduleTimeHTML = `<p class="scheduled-time-container" style="cursor: pointer; color: #0056b3;" title="Clique para editar o horário">Agendado: <span class="editable-time">${formatTimeFromISO(scheduleDateStr)}</span></p>`;
+                const timeText = formatTimeFromISO(scheduleDateStr) || 'Definir horário'; // <-- MUDANÇA AQUI
+                scheduleTimeHTML = `<p class="scheduled-time-container" style="cursor: pointer; color: #0056b3;" title="Clique para editar o horário">Agendado: <span class="editable-time">${timeText}</span></p>`;
             }
             cardHTML += `<div class="order-card-footer">${scheduleTimeHTML}<div class="status-indicators"><div class="status-item"><div class="status-circle ${washStatusClass}" data-status="is_washed"></div><span class="status-label">L</span></div><div class="status-item"><div class="status-circle ${passStatusClass}" data-status="is_passed"></div><span class="status-label">P</span></div><div class="status-item"><div class="status-circle ${packedStatusClass}" data-status="is_packed"></div><span class="status-label">E</span></div></div></div>`;
         }
@@ -164,7 +165,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         return card;
     }
-
+    
+    // ... (função sortCardsInColumn permanece a mesma)
     function sortCardsInColumn(container) {
         if (!container) return;
         const taskType = container.dataset.taskType;
@@ -191,6 +193,8 @@ document.addEventListener('DOMContentLoaded', () => {
         completed.forEach(c => container.appendChild(c));
     }
 
+
+    // ... (funções de Drag & Drop permanecem as mesmas)
     function handleDragStart(e) {
         const card = e.currentTarget;
         if (card.classList.contains('card-completed')) { e.preventDefault(); return; }
@@ -228,10 +232,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
     function handleDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
 
-    /**
-     * FUNÇÃO CORRIGIDA
-     * Pega o horário da entrega (sem conversão de fuso) e o aplica na nova data de agendamento.
-     */
     async function handleDrop(e) {
         e.preventDefault();
         const dropContainer = e.currentTarget;
@@ -274,7 +274,11 @@ document.addEventListener('DOMContentLoaded', () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ order_id: orderId, task_type: taskType, schedule_date: scheduleDateTime })
         });
-        if (!response.ok) throw new Error('Falha ao agendar tarefa no backend.');
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Falha ao agendar tarefa no backend:', errorData);
+            throw new Error(errorData.details || 'Falha ao agendar tarefa no backend.');
+        }
         const order = allOrdersData.find(o => o.order_id === orderId);
         if (order) {
             if(taskType === 'wash') order.planned_wash_datetime = scheduleDateTime;
@@ -289,6 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const orderId = card.dataset.orderId;
         const taskType = card.closest('.orders-container').dataset.taskType;
         try {
+            // Para cancelar, enviamos uma data simbólica do passado, que será substituída por NULL no backend.
             await fetch('/api/v1/planning/cancel-schedule', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -330,19 +335,22 @@ document.addEventListener('DOMContentLoaded', () => {
     
     /**
      * FUNÇÃO CORRIGIDA
-     * Interface de edição de horário aprimorada.
+     * Adiciona validação para não salvar horários vazios e melhora a experiência de edição.
      */
     function handleEditableTimeClick(e) {
         const target = e.target;
         if (!target.classList.contains('editable-time') || target.querySelector('input')) return;
 
         const timeContainer = target.parentElement;
-        const originalTime = target.textContent;
-        target.style.display = 'none'; // Esconde o texto do horário
+        const originalText = target.textContent;
+        // Se o texto for "Definir horário", o input começa vazio para o usuário preencher.
+        const originalTime = originalText === 'Definir horário' ? '' : originalText;
+        
+        target.style.display = 'none';
 
         const input = document.createElement('input');
         input.type = 'time';
-        input.className = 'time-input'; // Classe para estilização
+        input.className = 'time-input';
         input.value = originalTime;
         
         timeContainer.appendChild(input);
@@ -350,14 +358,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const finishEditing = async () => {
             const newTime = input.value;
-            // Se o valor for o mesmo, apenas restaura a UI
-            if (newTime === originalTime) {
+            
+            // Se o valor estiver vazio ou for igual ao original, apenas reverte a UI sem chamar a API.
+            if (!newTime || newTime === originalTime) {
                 target.style.display = '';
                 input.remove();
                 return;
             }
             
-            // Lógica de salvar
             const card = input.closest('.order-card');
             const container = card.closest('.orders-container');
             const column = card.closest('.day-column');
@@ -370,14 +378,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 await scheduleTask(orderId, taskType, newScheduleDateTime);
                 if (taskType === 'wash') card.dataset.plannedWashDatetime = newScheduleDateTime;
                 if (taskType === 'pass') card.dataset.plannedIronDatetime = newScheduleDateTime;
-
-                target.textContent = newTime; // Atualiza o texto com o novo horário
+                target.textContent = newTime;
                 sortCardsInColumn(container);
             } catch (error) {
                 console.error('Erro ao salvar novo horário:', error);
-                alert('Não foi possível salvar o novo horário.');
+                // Exibe o erro vindo do backend, que é mais claro para o usuário.
+                alert(`Não foi possível salvar: ${error.message}`);
             } finally {
-                // Restaura a UI independentemente do resultado
                 target.style.display = '';
                 input.remove();
             }
@@ -387,7 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
         input.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') input.blur();
             if (event.key === 'Escape') {
-                input.value = originalTime; // Restaura o valor original
+                input.value = originalTime;
                 input.blur();
             }
         });
@@ -395,14 +402,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Funções Utilitárias ---
     
-    /**
-     * NOVA FUNÇÃO UTILITÁRIA
-     * Pega uma string de data ISO (ex: "2024-09-20T18:00:00") e retorna apenas a hora (ex: "18:00").
-     * Isso evita problemas de conversão de fuso horário do navegador.
-     */
     function formatTimeFromISO(isoString) {
         if (!isoString || !isoString.includes('T')) {
-            return 'N/A';
+            return null; // Retorna null se a data for inválida ou nula
         }
         return isoString.split('T')[1].substring(0, 5);
     }

@@ -100,8 +100,13 @@ function scheduleTask(orderId, taskType, scheduleDate) {
     };
     const fieldName = fieldMap[taskType];
     if (!fieldName) throw new Error('Tipo de tarefa inválido.');
+    
+    // CORREÇÃO: Garante que o valor seja uma string ISO ou null.
+    const dbValue = scheduleDate instanceof Date ? scheduleDate.toISOString() : scheduleDate;
+
     const sql = `UPDATE orders SET ${fieldName} = ? WHERE order_id = ?`;
-    const info = db.prepare(sql).run(scheduleDate, orderId);
+    // A variável 'dbValue' é usada aqui no lugar de 'scheduleDate'
+    const info = db.prepare(sql).run(dbValue, orderId); 
     if (info.changes === 0) throw new Error('Pedido não encontrado.');
 }
 

@@ -1,5 +1,7 @@
 // src/controllers/orderController.js
 const orderService = require('../services/orderService');
+const { scheduleTaskSchema } = require('../utils/validationSchemas');
+
 
 async function handleSaveOrder(req, res) {
     try {
@@ -54,10 +56,6 @@ async function handleGetCustomerOrders(req, res) {
     }
 }
 
-// ADICIONE ESTAS NOVAS FUNÇÕES AO ARQUIVO orderController.js
-
-// ADICIONE ESTAS NOVAS FUNÇÕES AO ARQUIVO orderController.js
-
 async function handleGetDailyOrders(req, res) {
     try {
         const { start_date, end_date } = req.query;
@@ -74,7 +72,15 @@ async function handleGetDailyOrders(req, res) {
 
 async function handleScheduleTask(req, res) {
     try {
-        const { order_id, task_type, schedule_date } = req.body;
+        // NOVO: Bloco de validação
+        const { error, value } = scheduleTaskSchema.validate(req.body);
+        if (error) {
+            // Se a validação falhar, retorna um erro 400 claro para o frontend.
+            return res.status(400).json({ message: 'Dados de agendamento inválidos.', details: error.details.map(d => d.message).join(', ') });
+        }
+
+        // Se a validação passar, continua com os valores validados.
+        const { order_id, task_type, schedule_date } = value;
         await orderService.scheduleTask(order_id, task_type, schedule_date);
         res.status(200).json({ message: 'Tarefa agendada com sucesso.' });
     } catch (err) {

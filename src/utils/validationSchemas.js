@@ -41,6 +41,36 @@ const prepaidPackageSchema = Joi.object({
     })
 });
 
+
+/**
+ * NOVO SCHEMA
+ * Esquema de validação para agendar ou reagendar uma tarefa.
+ * - order_id: obrigatório, string.
+ * - task_type: obrigatório, deve ser 'wash' ou 'pass'.
+ * - schedule_date: obrigatório, deve ser uma data válida no formato ISO (ex: "2024-09-21T14:00:00").
+ */
+const scheduleTaskSchema = Joi.object({
+    order_id: Joi.string().required().messages({
+        'string.empty': `"order_id" não pode ser vazio`,
+        'any.required': `"order_id" é um campo obrigatório`
+    }),
+    task_type: Joi.string().valid('wash', 'pass').required().messages({
+        'any.only': `"task_type" deve ser 'wash' ou 'pass'`,
+        'any.required': `"task_type" é um campo obrigatório`
+    }),
+    // A validação Joi.date().iso() já está correta, ela garante o formato de entrada.
+    schedule_date: Joi.date().iso().required().messages({
+        'date.base': `"schedule_date" deve ser uma data válida`,
+        'date.format': `"schedule_date" deve estar no formato ISO (YYYY-MM-DDTHH:mm:ss)`,
+        'any.required': `"schedule_date" é um campo obrigatório`
+    })
+});
+
+const cancelScheduleSchema = Joi.object({
+    order_id: Joi.string().required(),
+    task_type: Joi.string().valid('wash', 'pass').required()
+});
+
 // Futuramente, outros esquemas podem ser adicionados aqui.
 // Ex: const saleSchema = Joi.object({...});
 // Ex: const discountSchema = Joi.object({...});
@@ -48,5 +78,7 @@ const prepaidPackageSchema = Joi.object({
 
 module.exports = {
     createCustomerSchema,
-    prepaidPackageSchema
+    prepaidPackageSchema,
+    scheduleTaskSchema,
+    cancelScheduleSchema
 };
