@@ -61,37 +61,36 @@ const saveOrder = db.transaction((orderData) => {
     return getOrderDetails(order_id);
 });
 
-function getDailyAggregatedOrders(startDate, endDate) {
+
+/**
+ * FUNÇÃO CORRIGIDA
+ * Busca todos os pedidos que tenham QUALQUER data relevante (entrega, lavagem, passagem)
+ * dentro do intervalo de datas fornecido, em vez de apenas a data de entrega.
+ * Isso garante que todos os cards agendados sejam sempre encontrados.
+ */
+function getOrdersForDateRange(startDate, endDate) {
     const sql = `
         SELECT
-            date(o.pickup_datetime) as date,
-            json_group_array(
-                json_object(
-                    'order_id', o.order_id,
-                    'customer_name', c.name,
-                    'total_amount', o.total_amount,
-                    'pickup_datetime', o.pickup_datetime,
-                    'execution_status', o.execution_status, -- <-- LINHA ADICIONADA AQUI
-                    'planned_wash_datetime', o.planned_wash_datetime,
-                    'planned_iron_datetime', o.planned_iron_datetime,
-                    'is_washed', CASE WHEN o.actual_wash_datetime IS NOT NULL THEN 1 ELSE 0 END,
-                    'is_passed', CASE WHEN o.actual_iron_datetime IS NOT NULL THEN 1 ELSE 0 END,
-                    'is_packed', 0
-                )
-            ) as orders,
-            SUM(o.total_amount) as total_value
+            o.order_id,
+            c.name as customer_name,
+            o.total_amount,
+            o.pickup_datetime,
+            o.execution_status,
+            o.planned_wash_datetime,
+            o.planned_iron_datetime,
+            CASE WHEN o.actual_wash_datetime IS NOT NULL THEN 1 ELSE 0 END as is_washed,
+            CASE WHEN o.actual_iron_datetime IS NOT NULL THEN 1 ELSE 0 END as is_passed,
+            0 as is_packed
         FROM orders o
         JOIN customers c ON o.customer_id = c.customer_id
-        WHERE date(o.pickup_datetime) BETWEEN date(?) AND date(?)
-        GROUP BY date(o.pickup_datetime)
-        ORDER BY date;
+        WHERE
+            date(o.pickup_datetime) BETWEEN date(?) AND date(?) OR
+            date(o.planned_wash_datetime) BETWEEN date(?) AND date(?) OR
+            date(o.planned_iron_datetime) BETWEEN date(?) AND date(?)
     `;
-    const rows = db.prepare(sql).all(startDate, endDate);
-    return rows.map(row => ({
-        ...row,
-        orders: JSON.parse(row.orders)
-    }));
+    return db.prepare(sql).all(startDate, endDate, startDate, endDate, startDate, endDate);
 }
+
 
 function scheduleTask(orderId, taskType, scheduleDate) {
     const fieldMap = {
@@ -101,11 +100,9 @@ function scheduleTask(orderId, taskType, scheduleDate) {
     const fieldName = fieldMap[taskType];
     if (!fieldName) throw new Error('Tipo de tarefa inválido.');
     
-    // CORREÇÃO: Garante que o valor seja uma string ISO ou null.
     const dbValue = scheduleDate instanceof Date ? scheduleDate.toISOString() : scheduleDate;
 
     const sql = `UPDATE orders SET ${fieldName} = ? WHERE order_id = ?`;
-    // A variável 'dbValue' é usada aqui no lugar de 'scheduleDate'
     const info = db.prepare(sql).run(dbValue, orderId); 
     if (info.changes === 0) throw new Error('Pedido não encontrado.');
 }
@@ -135,7 +132,7 @@ module.exports = {
     getOrderDetails,
     searchOrdersById,
     getOrdersByCustomer,
-    getDailyAggregatedOrders,
+    getOrdersForDateRange, // Exporta a função corrigida
     scheduleTask,
     cancelSchedule,
     updateOrderStatus,

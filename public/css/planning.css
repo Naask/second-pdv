@@ -5,78 +5,47 @@ header { background-color: #563d7c; color: white; padding: 0.5rem; text-align: c
 header h1 { font-size: 1.2rem; margin: 0; }
 main { padding: 1rem; }
 .controls-container { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; background-color: white; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+#planning-controls { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
 .controls-container label { font-weight: bold; }
 .controls-container input { padding: 0.5rem; border: 1px solid #ced4da; border-radius: 4px; font-size: 1rem; }
 .controls-container button { padding: 0.6rem 1rem; color: white; border: none; border-radius: 4px; cursor: pointer; background-color: #007bff; }
+#toggle-view-btn { background-color: #28a745; margin-left: auto; }
 #toggle-visibility-button { background-color: #6c757d; width: 40px; height: 40px; padding: 0.5rem; display: flex; align-items: center; justify-content: center; }
 
-/* --- ESTILOS DO PAINEL ATUALIZADOS --- */
-.schedule-block { 
-    background-color: #ffffff; 
-    border-radius: 8px; 
-    padding: 1rem; 
-    margin-bottom: 2rem; 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
-}
+/* --- VISÃO DE PLANEJAMENTO --- */
+#planning-view-container .schedule-block { background-color: #ffffff; border-radius: 8px; padding: 1rem; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+#planning-view-container .schedule-block h2 { margin: -1rem -1rem 1rem -1rem; padding: 0.75rem 1rem; border-radius: 8px 8px 0 0; color: white; font-size: 1.1rem; border-bottom: none; }
+#delivery-section h2 { background-color: #495057; }
+#wash-section h2 { background-color: #17a2b8; }
+#pass-section h2 { background-color: #6f42c1; }
+.planning-grid { display: flex; gap: 1rem; overflow-x: auto; padding: 1rem 0.5rem; border-radius: 8px; }
+#delivery-section .planning-grid { background-color: #f8f9fa; }
+#wash-section .planning-grid { background-color: #e8f7fa; }
+#pass-section .planning-grid { background-color: #f3effc; }
+#planning-view-container .day-column { flex: 0 0 320px; background-color: #fdfdfd; border: 1px solid #f0f0f0; border-radius: 8px; }
+#planning-view-container .day-header { padding: 0.75rem; background-color: #343a40; color: white; border-radius: 6px 6px 0 0; }
+#planning-view-container .day-title { font-size: 1.2rem; font-weight: bold; margin: 0; }
 
-.schedule-block h2 {
-    margin: -1rem -1rem 1rem -1rem;
-    padding: 0.75rem 1rem;
-    border-radius: 8px 8px 0 0;
-    color: white;
-    font-size: 1.1rem;
-    border-bottom: none;
-}
+/* --- NOVA VISÃO DIÁRIA --- */
+#daily-view-container { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+.day-panel { background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.day-panel h2 { padding: 0.75rem 1rem; border-radius: 8px 8px 0 0; color: white; font-size: 1.2rem; }
+#today-title { background-color: #343a40; }
+#tomorrow-title { background-color: #6c757d; }
+.panel-columns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; padding: 1rem; }
+.task-column h3 { text-align: center; margin-bottom: 0.5rem; font-size: 1rem; color: #495057; }
+.task-column .orders-container { background-color: #f8f9fa; border-radius: 6px; padding: 0.5rem; min-height: 400px; }
 
-/* --- Paleta de Cores: "Moderno & Sóbrio" --- */
-#delivery-section h2 {
-    background-color: #495057; /* Cinza Chumbo */
-}
-
-#wash-section h2 {
-    background-color: #17a2b8; /* Azul Petróleo */
-}
-
-#pass-section h2 {
-    background-color: #6f42c1; /* Roxo Sutil */
-}
-
-.planning-grid { 
-    display: flex; 
-    gap: 1rem; 
-    overflow-x: auto; 
-    padding: 1rem 0.5rem; 
-    border-radius: 8px;
-}
-
-#delivery-section .planning-grid {
-    background-color: #f8f9fa; /* Cinza bem claro */
-}
-#wash-section .planning-grid {
-    background-color: #e8f7fa; /* Azul Petróleo bem claro */
-}
-#pass-section .planning-grid {
-    background-color: #f3effc; /* Roxo Sutil bem claro */
-}
-/* --- FIM DAS ATUALIZAÇÕES DE ESTILO --- */
-
-
-.day-column { flex: 0 0 320px; background-color: #fdfdfd; border: 1px solid #f0f0f0; border-radius: 8px; }
-.day-header { padding: 0.75rem; background-color: #343a40; color: white; border-radius: 6px 6px 0 0; }
-.day-title { font-size: 1.2rem; font-weight: bold; margin: 0; }
-.day-load, .day-financials { font-size: 0.9rem; margin-top: 0.5rem; }
+/* --- ESTILOS COMPARTILHADOS --- */
+.hidden { display: none !important; }
+.day-financials, .day-scheduled-financials { font-size: 0.9rem; margin-top: 0.5rem; }
 .day-financials { border-top: 1px solid #6c757d; padding-top: 0.5rem; }
-.day-scheduled-financials { font-size: 0.9rem; margin-top: 0.5rem; color: #ffc107; }
-.orders-container { padding: 0.5rem; min-height: 250px; transition: background-color 0.2s ease; }
+.day-scheduled-financials { color: #ffc107; }
 .orders-container.drag-over { background-color: #d1e7dd; }
+.order-card { position: relative; background-color: white; border-radius: 6px; padding: 0.6rem 1rem; margin-bottom: 0.5rem; box-shadow: 0 1px 2px rgba(0,0,0,0.1); cursor: pointer; border-left: 5px solid #007bff; display: grid; gap: 0.5rem; }
 .order-card.dragging { opacity: 0.5; transform: rotate(3deg); }
 .order-card.card-completed { background-color: #d1e7dd; opacity: 0.7; border-left-color: #28a745; }
-.order-card.card-completed .order-card-title,
-.order-card.card-completed .order-card-subtitle {
-    text-decoration: line-through;
-    color: #6c757d;
-}
-.order-card { position: relative; background-color: white; border-radius: 6px; padding: 0.6rem 1rem; margin-bottom: 0.5rem; box-shadow: 0 1px 2px rgba(0,0,0,0.1); cursor: pointer; border-left: 5px solid #007bff; display: grid; grid-template-columns: 1fr; grid-template-rows: auto auto auto; gap: 0.5rem; }
+.order-card.card-completed .order-card-title, .order-card.card-completed .order-card-subtitle { text-decoration: line-through; color: #6c757d; }
 .order-card-header { display: flex; justify-content: space-between; align-items: flex-start; }
 .order-card-title { font-weight: bold; margin: 0; font-size: 1rem; }
 .order-card-subtitle { font-size: 0.9rem; font-weight: normal; color: #6c757d; }

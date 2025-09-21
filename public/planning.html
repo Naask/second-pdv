@@ -9,32 +9,72 @@
     <header><h1>Planeamento de Produção</h1></header>
     <main>
         <div class="controls-container">
-            <label for="start-date">Data Início:</label>
-            <input type="date" id="start-date">
-            <label for="end-date">Data Fim:</label>
-            <input type="date" id="end-date">
-            <button id="filter-button">Visualizar</button>
+            <div id="date-controls">
+                <label for="start-date">Data Início:</label>
+                <input type="date" id="start-date">
+                <label for="end-date" id="end-date-label">Data Fim:</label>
+                <input type="date" id="end-date">
+                <button id="filter-button">Visualizar</button>
+            </div>
+            
+            <button id="toggle-view-btn">Visão Lado a Lado</button>
             <button id="toggle-visibility-button" title="Mostrar/Ocultar valores">
                 <svg id="eye-icon-open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                 <svg id="eye-icon-closed" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M9.9 4.24A9 9 0 0 1 12 3c7 0 10 7 10 7a13.2 13.2 0 0 1-1.67 2.68"></path><path d="M6.61 6.61A13.5 13.5 0 0 0 2 12s3 7 10 7a9.7 9.7 0 0 0 5.39-1.61"></path><line x1="2" x2="22" y1="2" y2="22"></line><path d="M15 12a3 3 0 1 1-3-3"></path></svg>
             </button>
         </div>
-        
-        <div class="schedule-block" id="delivery-section">
-            <h2>Prazos de Entrega</h2>
-            <div class="planning-grid" id="delivery-schedule-grid"></div>
+
+        <div id="planning-view-container">
+            <div class="schedule-block" id="delivery-section">
+                <h2>Prazos de Entrega</h2>
+                <div class="planning-grid" id="delivery-schedule-grid"></div>
+            </div>
+            <div class="schedule-block" id="wash-section">
+                <h2>Programação de Lavagem</h2>
+                <div class="planning-grid" id="wash-schedule-grid"></div>
+            </div>
+            <div class="schedule-block" id="pass-section">
+                <h2>Programação para Passar</h2>
+                <div class="planning-grid" id="pass-schedule-grid"></div>
+            </div>
         </div>
 
-        <div class="schedule-block" id="wash-section">
-            <h2>Programação de Lavagem</h2>
-            <div class="planning-grid" id="wash-schedule-grid"></div>
+        <div id="daily-view-container" class="hidden">
+            <div class="day-panel">
+                <h2 id="today-title">Dia 1</h2>
+                <div class="panel-columns">
+                    <div class="task-column" id="today-delivery">
+                        <h3>A Concluir</h3>
+                        <div class="orders-container" data-date-iso="" data-task-type="delivery"></div>
+                    </div>
+                    <div class="task-column" id="today-wash">
+                        <h3>Lavagem</h3>
+                        <div class="orders-container" data-date-iso="" data-task-type="wash"></div>
+                    </div>
+                    <div class="task-column" id="today-pass">
+                        <h3>Passadoria</h3>
+                        <div class="orders-container" data-date-iso="" data-task-type="pass"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="day-panel">
+                <h2 id="tomorrow-title">Dia 2</h2>
+                <div class="panel-columns">
+                    <div class="task-column" id="tomorrow-delivery">
+                        <h3>A Concluir</h3>
+                        <div class="orders-container" data-date-iso="" data-task-type="delivery"></div>
+                    </div>
+                    <div class="task-column" id="tomorrow-wash">
+                        <h3>Lavagem</h3>
+                        <div class="orders-container" data-date-iso="" data-task-type="wash"></div>
+                    </div>
+                    <div class="task-column" id="tomorrow-pass">
+                        <h3>Passadoria</h3>
+                        <div class="orders-container" data-date-iso="" data-task-type="pass"></div>
+                    </div>
+                </div>
+            </div>
         </div>
-
-        <div class="schedule-block" id="pass-section">
-            <h2>Programação para Passar</h2>
-            <div class="planning-grid" id="pass-schedule-grid"></div>
-        </div>
-
     </main>
     <script src="js/planning.js"></script>
 </body>

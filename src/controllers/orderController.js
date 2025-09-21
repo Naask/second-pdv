@@ -1,7 +1,6 @@
 // src/controllers/orderController.js
 const orderService = require('../services/orderService');
-const { scheduleTaskSchema } = require('../utils/validationSchemas');
-
+const { scheduleTaskSchema, cancelScheduleSchema } = require('../utils/validationSchemas');
 
 async function handleSaveOrder(req, res) {
     try {
@@ -56,13 +55,19 @@ async function handleGetCustomerOrders(req, res) {
     }
 }
 
+
+/**
+ * FUNÇÃO CORRIGIDA
+ * Agora chama a função correta 'getOrdersForDateRange' do serviço.
+ */
 async function handleGetDailyOrders(req, res) {
     try {
         const { start_date, end_date } = req.query;
         if (!start_date || !end_date) {
             return res.status(400).json({ message: 'Datas de início e fim são obrigatórias.' });
         }
-        const orders = orderService.getDailyAggregatedOrders(start_date, end_date);
+        // CORREÇÃO: Chamando a função que realmente existe no serviço.
+        const orders = orderService.getOrdersForDateRange(start_date, end_date);
         res.status(200).json(orders);
     } catch (err) {
         console.error("Erro em handleGetDailyOrders:", err);
@@ -70,16 +75,13 @@ async function handleGetDailyOrders(req, res) {
     }
 }
 
+
 async function handleScheduleTask(req, res) {
     try {
-        // NOVO: Bloco de validação
         const { error, value } = scheduleTaskSchema.validate(req.body);
         if (error) {
-            // Se a validação falhar, retorna um erro 400 claro para o frontend.
             return res.status(400).json({ message: 'Dados de agendamento inválidos.', details: error.details.map(d => d.message).join(', ') });
         }
-
-        // Se a validação passar, continua com os valores validados.
         const { order_id, task_type, schedule_date } = value;
         await orderService.scheduleTask(order_id, task_type, schedule_date);
         res.status(200).json({ message: 'Tarefa agendada com sucesso.' });
@@ -91,7 +93,11 @@ async function handleScheduleTask(req, res) {
 
 async function handleCancelSchedule(req, res) {
     try {
-        const { order_id, task_type } = req.body;
+        const { error, value } = cancelScheduleSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ message: 'Dados para cancelamento inválidos.', details: error.details.map(d => d.message).join(', ') });
+        }
+        const { order_id, task_type } = value;
         await orderService.cancelSchedule(order_id, task_type);
         res.status(200).json({ message: 'Agendamento cancelado com sucesso.' });
     } catch (err) {
@@ -111,7 +117,6 @@ async function handleUpdateStatus(req, res) {
     }
 }
 
-// ATUALIZE SEU MODULE.EXPORTS PARA INCLUIR AS NOVAS FUNÇÕES
 module.exports = {
     handleSaveOrder,
     handleGetOrderDetails,
