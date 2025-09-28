@@ -167,12 +167,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function distributeCards() {
         document.querySelectorAll('.orders-container').forEach(c => c.innerHTML = '');
+
         allOrdersData.forEach(order => {
-            if (order.pickup_datetime) {
-                const deliveryDate = order.pickup_datetime.split('T')[0];
-                document.querySelectorAll(`.orders-container[data-task-type="delivery"][data-date-iso="${deliveryDate}"]`)
-                    .forEach(c => c.appendChild(createOrderCard(order, false, 'delivery')));
-            }
             if (order.planned_wash_datetime) {
                 const washDate = order.planned_wash_datetime.split('T')[0];
                 document.querySelectorAll(`.orders-container[data-task-type="wash"][data-date-iso="${washDate}"]`)
@@ -182,6 +178,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const passDate = order.planned_iron_datetime.split('T')[0];
                 document.querySelectorAll(`.orders-container[data-task-type="pass"][data-date-iso="${passDate}"]`)
                     .forEach(c => c.appendChild(createOrderCard(order, true, 'pass')));
+            }
+            if (order.pickup_datetime) {
+                const deliveryDate = order.pickup_datetime.split('T')[0];
+                document.querySelectorAll(`.orders-container[data-task-type="delivery"][data-date-iso="${deliveryDate}"]`)
+                    .forEach(c => c.appendChild(createOrderCard(order, false, 'delivery')));
             }
         });
         document.querySelectorAll('.orders-container').forEach(sortCardsInColumn);
@@ -249,12 +250,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- LÓGICA DE EVENTOS (DRAG & DROP, CLIQUES) ---
+
+    // --- NOVA FUNÇÃO DE AUTO-SCROLL ---
+    const SCROLL_THRESHOLD = 60; // Distância em pixels da borda para ativar
+    const SCROLL_SPEED = 15;     // Velocidade da rolagem
+
+    function handleAutoScroll(e) {
+        // Rola para baixo
+        if (e.clientY > window.innerHeight - SCROLL_THRESHOLD) {
+            window.scrollBy(0, SCROLL_SPEED);
+        } 
+        // Rola para cima
+        else if (e.clientY < SCROLL_THRESHOLD) {
+            window.scrollBy(0, -SCROLL_SPEED);
+        }
+    }
+
+    /**
+     * FUNÇÃO MODIFICADA
+     * Agora adiciona e remove o listener de auto-scroll
+     */
     function handleDragStart(e) {
         const card = e.target.closest('.order-card');
         if (!card || card.classList.contains('card-completed')) { e.preventDefault(); return; }
+        
         draggedCardInfo = { orderId: card.dataset.orderId, element: card };
+        
+        // Ativa o auto-scroll quando o arraste começa
+        document.addEventListener('dragover', handleAutoScroll);
+
         setTimeout(() => card.classList.add('dragging'), 0);
-        document.addEventListener('dragend', () => card.classList.remove('dragging'), { once: true });
+        
+        // Desativa o auto-scroll quando o arraste termina
+        document.addEventListener('dragend', () => {
+            card.classList.remove('dragging');
+            document.removeEventListener('dragover', handleAutoScroll);
+        }, { once: true });
     }
     
     function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
@@ -272,14 +303,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!targetTaskType || !targetDateStr) return;
         
         const originalPickupDate = new Date(originalCard.dataset.pickupDatetime);
-        const hours = originalPickupDate.getHours();
-        const minutes = originalPickupDate.getMinutes();
+        const hours = originalPickupDate.toString() !== 'Invalid Date' ? originalPickupDate.getHours() : 12;
+        const minutes = originalPickupDate.toString() !== 'Invalid Date' ? originalPickupDate.getMinutes() : 0;
+        
         const newScheduleDate = new Date(`${targetDateStr}T00:00:00`);
         newScheduleDate.setHours(hours, minutes);
         const newScheduleDateTimeUTC = newScheduleDate.toISOString();
 
-        try { await scheduleTask(orderId, targetTaskType, newScheduleDateTimeUTC); updateView(); } 
-        catch (error) { alert(`Não foi possível agendar: ${error.message}`); updateView(); }
+        try { 
+            await scheduleTask(orderId, targetTaskType, newScheduleDateTimeUTC); 
+            updateView(); 
+        } 
+        catch (error) { 
+            alert(`Não foi possível agendar: ${error.message}`); 
+            updateView(); 
+        }
     }
     
     async function scheduleTask(orderId, taskType, scheduleDateTime) {
@@ -351,8 +389,14 @@ document.addEventListener('DOMContentLoaded', () => {
             newScheduleDate.setHours(parseInt(hours, 10), parseInt(minutes, 10));
             const newScheduleDateTimeUTC = newScheduleDate.toISOString();
 
-            try { await scheduleTask(orderId, taskType, newScheduleDateTimeUTC); updateView(); } 
-            catch (error) { alert(`Não foi possível salvar: ${error.message}`); updateView(); }
+            try { 
+                await scheduleTask(orderId, taskType, newScheduleDateTimeUTC); 
+                updateView(); 
+            } 
+            catch (error) { 
+                alert(`Não foi possível salvar: ${error.message}`); 
+                updateView(); 
+            }
         };
         
         input.addEventListener('blur', finishEditing, { once: true });
@@ -363,14 +407,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- FUNÇÕES UTILITÁRIAS ---
-    /**
-     * FUNÇÃO CORRIGIDA
-     * Agora itera sobre as colunas de ambas as visões para calcular e exibir os totais.
-     */
     function updateAllColumnTotals() {
-        // Visão de Planejamento
-        document.querySelectorAll('#planning-view-container .day-column').forEach(column => {
-            const totalContainer = column.querySelector('[data-total-container]');
+        document.querySelectorAll('.day-column, .task-column').forEach(column => {
+            const totalContainer = column.querySelector('[data-total-container], .column-total');
             if (!totalContainer) return;
 
             const container = column.querySelector('.orders-container');
@@ -380,22 +419,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 totalValue += parseFloat(card.dataset.orderValue) || 0;
             });
             
-            const valueTextElement = totalContainer.querySelector('.value-text');
-            if (valueTextElement) {
-                valueTextElement.textContent = `R$ ${formatCurrency(totalValue)}`;
-            }
-        });
-
-        // Visão Lado a Lado
-        document.querySelectorAll('#daily-view-container .task-column').forEach(column => {
-            const totalContainer = column.querySelector('.column-total');
-            if (!totalContainer) return;
-            const container = column.querySelector('.orders-container');
-            const cards = container.querySelectorAll('.order-card');
-            let totalValue = 0;
-            cards.forEach(card => {
-                totalValue += parseFloat(card.dataset.orderValue) || 0;
-            });
             const valueTextElement = totalContainer.querySelector('.value-text');
             if (valueTextElement) {
                 valueTextElement.textContent = `R$ ${formatCurrency(totalValue)}`;
