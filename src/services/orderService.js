@@ -21,11 +21,13 @@ function getOrdersByCustomer(customerId) {
     return db.prepare(sql).all(customerId);
 }
 
+// --- LÓGICA REVERTIDA PARA A VERSÃO ORIGINAL ---
 const saveOrder = db.transaction((orderData) => {
     const {
         order_id, customer_id, execution_status, pickup_datetime, completed_at, paid_at, created_at, items, payments = [],
         planned_wash_datetime, actual_wash_datetime, planned_iron_datetime, actual_iron_datetime
     } = orderData;
+
     const totalAmount = items ? items.reduce((sum, item) => sum + Math.round((item.unit_price || 0) * (item.quantity || 0)), 0) : 0;
     const totalToPayWithBalance = (payments || []).filter(p => p.method.toUpperCase() === 'SALDO').reduce((sum, p) => sum + p.amount, 0);
     if (totalToPayWithBalance > 0) {
@@ -62,12 +64,6 @@ const saveOrder = db.transaction((orderData) => {
 });
 
 
-/**
- * FUNÇÃO CORRIGIDA
- * Busca todos os pedidos que tenham QUALQUER data relevante (entrega, lavagem, passagem)
- * dentro do intervalo de datas fornecido, em vez de apenas a data de entrega.
- * Isso garante que todos os cards agendados sejam sempre encontrados.
- */
 function getOrdersForDateRange(startDate, endDate) {
     const sql = `
         SELECT
@@ -132,7 +128,7 @@ module.exports = {
     getOrderDetails,
     searchOrdersById,
     getOrdersByCustomer,
-    getOrdersForDateRange, // Exporta a função corrigida
+    getOrdersForDateRange, 
     scheduleTask,
     cancelSchedule,
     updateOrderStatus,
